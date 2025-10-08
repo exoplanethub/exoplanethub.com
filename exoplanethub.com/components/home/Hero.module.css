@@ -87,8 +87,9 @@
   }
   
   .primaryBtn {
-    width: 100%;
-    max-width: 320px;
-    text-align: center;
+    font-size: 16px;
+    padding: 12px 24px;
+    height: auto;
+    white-space: normal;
   }
 }

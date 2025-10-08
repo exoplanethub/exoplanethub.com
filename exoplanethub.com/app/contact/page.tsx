@@ -8,19 +8,14 @@ export default function ContactPage() {
         
         <div className={styles.content}>
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+            Have questions about the data? Want to suggest a feature? Found an issue? We'd love to hear from you!
           </p>
           
           <div className={styles.emailSection}>
-            <h2 className={styles.subtitle}>Get in Touch</h2>
             <a href="mailto:explore@exoplanethub.com" className={styles.email}>
               explore@exoplanethub.com
             </a>
           </div>
-          
-          <p>
-            Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-          </p>
         </div>
       </div>
     </main>
