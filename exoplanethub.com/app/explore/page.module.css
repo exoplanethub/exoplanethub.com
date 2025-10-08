@@ -10,6 +10,41 @@
   text-align: center;
 }
 
+.viewToggle {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.toggleBtn {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 2px solid var(--color-border);
+  border-radius: 999px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggleBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
+.toggleBtn.active {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  border-color: var(--color-primary);
+}
+
+.content {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
 .title {
   font-family: var(--font-heading);
   font-size: 48px;
@@ -26,8 +61,6 @@
 }
 
 .grid {
-  max-width: 1280px;
-  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 24px;

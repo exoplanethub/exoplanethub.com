@@ -1,0 +1,126 @@
+.controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 250px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 12px 20px;
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.select {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 12px 20px;
+  color: var(--color-text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tableContainer {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead {
+  background: var(--color-surface-alt);
+}
+
+.table th {
+  padding: 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.table th:hover {
+  color: var(--color-primary);
+}
+
+.table td {
+  padding: 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.table tbody tr {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-alt);
+}
+
+.planetName {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.scoreHigh {
+  background: var(--color-accent);
+  color: var(--color-background);
+}
+
+.scoreMedium {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.scoreLow {
+  background: var(--color-text-muted);
+  color: var(--color-background);
+}
+
+.sortIcon {
+  margin-left: 4px;
+  font-size: 10px;
+}
+
+@media (max-width: 768px) {
+  .tableContainer {
+    overflow-x: auto;
+  }
+  
+  .table {
+    min-width: 600px;
+  }
+}
