@@ -1,0 +1,44 @@
+.page {
+  min-height: 100vh;
+  background: var(--color-background);
+  padding: 120px 24px 64px;
+}
+
+.header {
+  max-width: 1280px;
+  margin: 0 auto 48px;
+  text-align: center;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 16px;
+}
+
+.subtitle {
+  font-size: 18px;
+  color: var(--color-text-muted);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.grid {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 32px;
+  }
+  
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
