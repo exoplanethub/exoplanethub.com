@@ -19,7 +19,7 @@ function calculateHabitabilityScore(planet: NASAPlanet): number {
   const EARTH_TEMP = 288; // Kelvin
   const EARTH_MASS = 1.0; // Earth masses
   
-  let components = [];
+  const components = [];
   
   // Radius component
   if (planet.pl_rade) {
@@ -48,7 +48,7 @@ function calculateHabitabilityScore(planet: NASAPlanet): number {
   return Math.round(esi * 100);
 }
 
-function determinePlanetType(radius: number, mass: number): string {
+function determinePlanetType(radius: number): string {
   if (!radius) return 'Unknown';
   if (radius < 1.25) return 'Rocky';
   if (radius < 2) return 'Super Earth';

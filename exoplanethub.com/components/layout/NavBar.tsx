@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import styles from './NavBar.module.css';
 
 export default function NavBar() {
@@ -8,10 +9,10 @@ export default function NavBar() {
   return (
     <nav className={styles.nav}>
       <div className={styles.container}>
-        <a href="/" className={styles.logo} onClick={() => setIsOpen(false)}>
+        <Link href="/" className={styles.logo} onClick={() => setIsOpen(false)}>
           <span className={styles.logoIcon}>🪐</span>
           <span className={styles.logoText}>ExoplanetHub</span>
-        </a>
+        </Link>
         
         <button 
           className={`${styles.hamburger} ${isOpen ? styles.open : ''}`}

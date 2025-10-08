@@ -8,7 +8,7 @@ export default function ContactPage() {
         
         <div className={styles.content}>
           <p>
-            Have questions about the data? Want to suggest a feature? Found an issue? We'd love to hear from you!
+            Have questions about the data? Want to suggest a feature? Found an issue? We&apos;d love to hear from you!
           </p>
           
           <div className={styles.emailSection}>
