@@ -1,11 +1,13 @@
+'use client';
 import { Planet } from '@/lib/mockPlanets';
 import styles from './PlanetCard.module.css';
 
 interface PlanetCardProps {
   planet: Planet;
+  onClick: () => void;
 }
 
-export default function PlanetCard({ planet }: PlanetCardProps) {
+export default function PlanetCard({ planet, onClick }: PlanetCardProps) {
   const getScoreColor = (score: number) => {
     if (score >= 85) return styles.scoreHigh;
     if (score >= 75) return styles.scoreMedium;
@@ -40,7 +42,7 @@ export default function PlanetCard({ planet }: PlanetCardProps) {
           </div>
         </div>
         
-        <button className={styles.learnMore}>Learn More</button>
+        <button className={styles.learnMore} onClick={onClick}>Learn More</button>
       </div>
     </div>
   );
