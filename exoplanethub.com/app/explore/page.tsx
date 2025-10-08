@@ -18,8 +18,6 @@ export default function ExplorePage() {
     fetch('/api/planets')
       .then(res => res.json())
       .then(data => {
-        console.log('Loaded planets on client:', data.length);
-        console.log('First planet:', data[0]);
         setPlanets(data);
         setLoading(false);
       })

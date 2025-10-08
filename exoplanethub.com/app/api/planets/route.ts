@@ -80,9 +80,6 @@ export async function GET() {
     
     const data: NASAPlanet[] = await response.json();
     
-    console.log(`Fetched ${data.length} planets from NASA API`);
-    console.log('Sample planet:', data[0]);
-    
     const planets = data
       .map((p, index) => ({
         id: String(index + 1),
@@ -99,9 +96,6 @@ export async function GET() {
       .filter(p => p.habitabilityScore > 0)
       .sort((a, b) => b.habitabilityScore - a.habitabilityScore)
       .slice(0, 50);
-    
-    console.log(`Returning ${planets.length} planets with habitability scores`);
-    console.log('Top 3 planets:', planets.slice(0, 3).map(p => ({ name: p.name, score: p.habitabilityScore })));
     
     return NextResponse.json(planets);
   } catch (error) {
