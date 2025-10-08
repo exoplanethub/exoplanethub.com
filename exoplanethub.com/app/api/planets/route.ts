@@ -59,20 +59,18 @@ function determinePlanetType(radius: number, mass: number): string {
 export async function GET() {
   try {
     const query = `
-      SELECT pl_name, hostname, pl_rade, pl_eqt, sy_dist, pl_orbsmax, pl_bmasse, disc_year
+      SELECT TOP 500 pl_name, hostname, pl_rade, pl_eqt, sy_dist, pl_orbsmax, pl_bmasse, disc_year
       FROM ps
       WHERE pl_rade IS NOT NULL 
-      AND pl_rade < 3
       AND pl_eqt IS NOT NULL
-      AND pl_eqt > 150 
-      AND pl_eqt < 400
       AND sy_dist IS NOT NULL
-      ORDER BY pl_rade ASC
+      AND pl_rade < 10
+      AND sy_dist < 1000
     `;
     
     const url = `https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=${encodeURIComponent(query)}&format=json`;
     
-    const response = await fetch(url, { next: { revalidate: 86400 } });
+    const response = await fetch(url, { cache: 'no-store' });
     
     if (!response.ok) {
       throw new Error('Failed to fetch from NASA API');
@@ -93,9 +91,8 @@ export async function GET() {
         discovered: p.disc_year || 2000,
         imageUrl: ''
       }))
-      .filter(p => p.habitabilityScore > 0)
       .sort((a, b) => b.habitabilityScore - a.habitabilityScore)
-      .slice(0, 50);
+      .slice(0, 100);
     
     return NextResponse.json(planets);
   } catch (error) {
