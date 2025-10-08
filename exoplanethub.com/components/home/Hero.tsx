@@ -27,12 +27,12 @@ export default function Hero() {
       <div className={styles.stars}></div>
       <div className={styles.container}>
         <h1 className={styles.title}>
-          Find Worlds That<br />Could Harbor Life
+          Discover the Most<br />Earth-Like Worlds
         </h1>
         <p className={styles.subtitle}>
-          Explore exoplanets ranked by habitability. Discover which distant worlds have the best chance of supporting life.
+          Explore exoplanets ranked by Earth similarity. Find distant worlds with conditions that could support life.
         </p>
-        <a href="/explore" className={styles.primaryBtn}>Explore Habitable Worlds</a>
+        <a href="/explore" className={styles.primaryBtn}>Explore Earth-Like Planets</a>
       </div>
       <div className={styles.attribution}>
         Image: NASA/ESA/CSA James Webb Space Telescope

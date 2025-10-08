@@ -12,28 +12,22 @@ interface NASAPlanet {
 }
 
 function calculateHabitabilityScore(planet: NASAPlanet): number {
-  // Earth Similarity Index (ESI) - scientific standard
-  // Based on Schulze-Makuch et al. (2011)
-  
-  const EARTH_RADIUS = 1.0; // Earth radii
-  const EARTH_TEMP = 288; // Kelvin
-  const EARTH_MASS = 1.0; // Earth masses
+  const EARTH_RADIUS = 1.0;
+  const EARTH_TEMP = 288;
+  const EARTH_MASS = 1.0;
   
   const components = [];
   
-  // Radius component
   if (planet.pl_rade) {
     const radiusComponent = 1 - Math.abs((planet.pl_rade - EARTH_RADIUS) / (planet.pl_rade + EARTH_RADIUS));
     components.push(radiusComponent);
   }
   
-  // Temperature component
   if (planet.pl_eqt) {
     const tempComponent = 1 - Math.abs((planet.pl_eqt - EARTH_TEMP) / (planet.pl_eqt + EARTH_TEMP));
     components.push(tempComponent);
   }
   
-  // Mass component (if available)
   if (planet.pl_bmasse) {
     const massComponent = 1 - Math.abs((planet.pl_bmasse - EARTH_MASS) / (planet.pl_bmasse + EARTH_MASS));
     components.push(massComponent);
@@ -41,7 +35,6 @@ function calculateHabitabilityScore(planet: NASAPlanet): number {
   
   if (components.length === 0) return 0;
   
-  // Calculate geometric mean and convert to 0-100 scale
   const product = components.reduce((acc, val) => acc * val, 1);
   const esi = Math.pow(product, 1 / components.length);
   

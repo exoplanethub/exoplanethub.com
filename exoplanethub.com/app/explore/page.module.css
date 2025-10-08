@@ -64,6 +64,15 @@
   gap: 8px;
 }
 
+.disclaimer {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  max-width: 700px;
+  margin: 12px auto 0;
+  font-style: italic;
+  opacity: 0.8;
+}
+
 .infoBtn {
   background: transparent;
   border: none;
