@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "defaultTheme": "nautilus",
+  "themes": {
+    "nautilus": {
+      "name": "Nautilus (Verne brass on deep sea)",
+      "colors": {
+        "background": "#0B1020",
+        "surface": "#121933",
+        "surfaceAlt": "#0E1530",
+        "primary": "#E1B864",
+        "primaryContrast": "#0B1020",
+        "accent": "#56D4C2",
+        "accentContrast": "#07101F",
+        "text": "#E9EDF8",
+        "textMuted": "#A7B0C8",
+        "border": "#2B3566",
+        "success": "#3DD985",
+        "warning": "#FFB454",
+        "danger": "#FF6B6B",
+        "link": "#7FB3FF",
+        "chart1": "#E1B864",
+        "chart2": "#56D4C2",
+        "chart3": "#7FB3FF",
+        "chart4": "#FFB454",
+        "chart5": "#B07CFF",
+        "focusRing": "rgba(225,184,100,0.55)"
+      },
+      "typography": {
+        "fontFamily": {
+          "heading": "'Poppins', 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+          "body": "'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+          "mono": "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        },
+        "sizes": {
+          "xs": "12px",
+          "sm": "14px",
+          "base": "16px",
+          "lg": "18px",
+          "xl": "20px",
+          "2xl": "24px",
+          "3xl": "30px",
+          "4xl": "36px"
+        },
+        "lineHeights": {
+          "tight": 1.15,
+          "snug": 1.25,
+          "normal": 1.5,
+          "relaxed": 1.65
+        },
+        "weights": {
+          "regular": 400,
+          "medium": 500,
+          "semibold": 600,
+          "bold": 700
+        }
+      },
+      "radii": { "sm": "6px", "md": "10px", "lg": "16px", "xl": "24px", "pill": "999px" },
+      "shadows": {
+        "sm": "0 1px 2px rgba(0,0,0,0.22)",
+        "md": "0 6px 20px rgba(2,8,38,0.35)",
+        "lg": "0 14px 40px rgba(2,8,38,0.45)"
+      },
+      "spacing": { "0": "0px", "1": "4px", "2": "8px", "3": "12px", "4": "16px", "5": "20px", "6": "24px", "8": "32px", "10": "40px", "12": "48px", "16": "64px" },
+      "breakpoints": { "sm": "640px", "md": "768px", "lg": "1024px", "xl": "1280px" },
+      "components": {
+        "button": { "radius": "pill", "height": "44px", "paddingX": "20px" },
+        "card": { "radius": "lg", "padding": "20px", "shadow": "md" },
+        "badge": { "radius": "pill", "paddingX": "10px", "height": "24px" }
+      }
+    },
+    "cosmicDawn": {
+      "name": "Cosmic Dawn (deep space with nebula accents)",
+      "colors": {
+        "background": "#080A17",
+        "surface": "#0E1024",
+        "surfaceAlt": "#0B0E1E",
+        "primary": "#8FD3FF",
+        "primaryContrast": "#0A0D1B",
+        "accent": "#B989FF",
+        "accentContrast": "#0A0D1B",
+        "text": "#E7EBFF",
+        "textMuted": "#A5ACD6",
+        "border": "#2A3063",
+        "success": "#49E1A8",
+        "warning": "#FFC46B",
+        "danger": "#FF6E8A",
+        "link": "#8FD3FF",
+        "chart1": "#8FD3FF",
+        "chart2": "#B989FF",
+        "chart3": "#67E5D5",
+        "chart4": "#FFC46B",
+        "chart5": "#FF8BD5",
+        "focusRing": "rgba(143,211,255,0.55)"
+      },
+      "typography": {
+        "fontFamily": {
+          "heading": "'Outfit', 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+          "body": "'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+          "mono": "'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        },
+        "sizes": {
+          "xs": "12px", "sm": "14px", "base": "16px", "lg": "18px",
+          "xl": "22px", "2xl": "26px", "3xl": "32px", "4xl": "40px"
+        },
+        "lineHeights": { "tight": 1.12, "snug": 1.22, "normal": 1.5, "relaxed": 1.62 },
+        "weights": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 }
+      },
+      "radii": { "sm": "8px", "md": "12px", "lg": "18px", "xl": "28px", "pill": "999px" },
+      "shadows": {
+        "sm": "0 1px 2px rgba(0,0,0,0.28)",
+        "md": "0 10px 24px rgba(2,6,23,0.45)",
+        "lg": "0 18px 50px rgba(2,6,23,0.55)"
+      },
+      "spacing": { "0": "0px", "1": "4px", "2": "8px", "3": "12px", "4": "16px", "5": "20px", "6": "24px", "8": "32px", "10": "40px", "12": "48px", "16": "64px" },
+      "breakpoints": { "sm": "640px", "md": "768px", "lg": "1060px", "xl": "1360px" },
+      "components": {
+        "button": { "radius": "pill", "height": "46px", "paddingX": "22px" },
+        "card": { "radius": "xl", "padding": "22px", "shadow": "lg" },
+        "badge": { "radius": "pill", "paddingX": "12px", "height": "24px" }
+      }
+    },
+    "starlight": {
+      "name": "Starlight (clean light theme for readability)",
+      "colors": {
+        "background": "#F7FAFF",
+        "surface": "#FFFFFF",
+        "surfaceAlt": "#F1F5FF",
+        "primary": "#2459F5",
+        "primaryContrast": "#FFFFFF",
+        "accent": "#10BDAE",
+        "accentContrast": "#041020",
+        "text": "#0F172A",
+        "textMuted": "#55627A",
+        "border": "#D7DEEF",
+        "success": "#0EAD77",
+        "warning": "#D88A00",
+        "danger": "#D64550",
+        "link": "#2A5BFF",
+        "chart1": "#2459F5",
+        "chart2": "#10BDAE",
+        "chart3": "#7C3AED",
+        "chart4": "#F59E0B",
+        "chart5": "#EF4444",
+        "focusRing": "rgba(36,89,245,0.45)"
+      },
+      "typography": {
+        "fontFamily": {
+          "heading": "'DM Sans', 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+          "body": "'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+          "mono": "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        },
+        "sizes": {
+          "xs": "12px", "sm": "14px", "base": "16px", "lg": "18px",
+          "xl": "22px", "2xl": "26px", "3xl": "32px", "4xl": "40px"
+        },
+        "lineHeights": { "tight": 1.12, "snug": 1.25, "normal": 1.55, "relaxed": 1.7 },
+        "weights": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 }
+      },
+      "radii": { "sm": "6px", "md": "10px", "lg": "14px", "xl": "22px", "pill": "999px" },
+      "shadows": {
+        "sm": "0 1px 2px rgba(2,8,38,0.06)",
+        "md": "0 6px 18px rgba(2,8,38,0.09)",
+        "lg": "0 14px 34px rgba(2,8,38,0.12)"
+      },
+      "spacing": { "0": "0px", "1": "4px", "2": "8px", "3": "12px", "4": "16px", "5": "20px", "6": "24px", "8": "32px", "10": "40px", "12": "48px", "16": "64px" },
+      "breakpoints": { "sm": "640px", "md": "768px", "lg": "1024px", "xl": "1280px" },
+      "components": {
+        "button": { "radius": "pill", "height": "44px", "paddingX": "18px" },
+        "card": { "radius": "lg", "padding": "18px", "shadow": "md" },
+        "badge": { "radius": "pill", "paddingX": "10px", "height": "22px" }
+      }
+    }
+  }
+}

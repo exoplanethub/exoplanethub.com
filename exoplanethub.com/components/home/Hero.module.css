@@ -1,0 +1,151 @@
+.hero {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0B1020 0%, #121933 100%);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.stars {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20% 30%, white, transparent),
+    radial-gradient(2px 2px at 60% 70%, white, transparent),
+    radial-gradient(1px 1px at 50% 50%, white, transparent),
+    radial-gradient(1px 1px at 80% 10%, white, transparent),
+    radial-gradient(2px 2px at 90% 60%, white, transparent),
+    radial-gradient(1px 1px at 33% 80%, white, transparent);
+  background-size: 200% 200%;
+  animation: twinkle 8s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+.container {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 120px 24px 64px;
+  text-align: center;
+  z-index: 1;
+}
+
+.title {
+  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #E9EDF8;
+  margin: 0 0 24px;
+  background: linear-gradient(135deg, #E9EDF8 0%, #56D4C2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 20px;
+  line-height: 1.65;
+  color: #A7B0C8;
+  max-width: 700px;
+  margin: 0 auto 40px;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 80px;
+}
+
+.primaryBtn {
+  background: #E1B864;
+  color: #0B1020;
+  border: none;
+  border-radius: 999px;
+  height: 44px;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.primaryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(225, 184, 100, 0.3);
+}
+
+.secondaryBtn {
+  background: transparent;
+  color: #E9EDF8;
+  border: 2px solid #2B3566;
+  border-radius: 999px;
+  height: 44px;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.secondaryBtn:hover {
+  border-color: #56D4C2;
+  color: #56D4C2;
+}
+
+.stats {
+  display: flex;
+  gap: 64px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.stat {
+  text-align: center;
+}
+
+.statValue {
+  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: #E1B864;
+  margin-bottom: 8px;
+}
+
+.statLabel {
+  font-size: 14px;
+  color: #A7B0C8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 40px;
+  }
+  
+  .subtitle {
+    font-size: 18px;
+  }
+  
+  .actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .primaryBtn, .secondaryBtn {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .stats {
+    gap: 32px;
+  }
+}
