@@ -1,0 +1,17 @@
+version = 0.1
+
+[dev.deploy.parameters]
+stack_name = "exoplanethub-dev"
+resolve_s3 = true
+s3_prefix = "exoplanethub-dev"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=dev"
+
+[main.deploy.parameters]
+stack_name = "exoplanethub-main"
+resolve_s3 = true
+s3_prefix = "exoplanethub-main"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=main"

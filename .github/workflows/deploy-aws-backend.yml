@@ -1,0 +1,42 @@
+name: Deploy AWS Backend
+
+on:
+  push:
+    tags:
+      - 'dev-aws-backend-*'
+      - 'main-aws-backend-*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+      
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ ${{ github.ref }} == refs/tags/dev-aws-backend-* ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            echo "environment=main" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: SAM build and deploy
+        working-directory: ./aws-backend
+        run: |
+          sam build
+          sam deploy --config-env ${{ steps.env.outputs.environment }} --no-confirm-changeset --no-fail-on-empty-changeset

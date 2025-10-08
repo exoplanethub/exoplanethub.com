@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ExoplanetHub serverless backend
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - main
+    Description: Environment name
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 512
+    Runtime: python3.13
+
+Resources:
+  ExoplanetsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub exoplanets-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pl_name
+          AttributeType: S
+        - AttributeName: habitability_score
+          AttributeType: N
+        - AttributeName: disc_year
+          AttributeType: N
+      KeySchema:
+        - AttributeName: pl_name
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: habitability-index
+          KeySchema:
+            - AttributeName: habitability_score
+              KeyType: HASH
+            - AttributeName: pl_name
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: year-index
+          KeySchema:
+            - AttributeName: disc_year
+              KeyType: HASH
+            - AttributeName: pl_name
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  DataSyncFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub exoplanet-data-sync-${Environment}
+      CodeUri: lambda/sync/
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ExoplanetsTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ExoplanetsTable
+      Events:
+        HourlySync:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)
+            Enabled: true
+
+Outputs:
+  ExoplanetsTableName:
+    Description: DynamoDB table name
+    Value: !Ref ExoplanetsTable
+  ExoplanetsTableArn:
+    Description: DynamoDB table ARN
+    Value: !GetAtt ExoplanetsTable.Arn
