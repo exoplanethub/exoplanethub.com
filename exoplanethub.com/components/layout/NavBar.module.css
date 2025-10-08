@@ -3,9 +3,9 @@
   top: 0;
   left: 0;
   right: 0;
-  background: rgba(11, 16, 32, 0.85);
+  background: color-mix(in srgb, var(--color-background) 85%, transparent);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid #2B3566;
+  border-bottom: 1px solid var(--color-border);
   z-index: 100;
 }
 
@@ -22,10 +22,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 20px;
-  color: #E1B864;
+  color: var(--color-primary);
 }
 
 .logoIcon {
@@ -33,7 +33,7 @@
 }
 
 .logoText {
-  background: linear-gradient(135deg, #E1B864 0%, #56D4C2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -45,7 +45,7 @@
 }
 
 .link {
-  color: #E9EDF8;
+  color: var(--color-text);
   text-decoration: none;
   font-size: 16px;
   font-weight: 500;
@@ -53,5 +53,5 @@
 }
 
 .link:hover {
-  color: #E1B864;
+  color: var(--color-primary);
 }

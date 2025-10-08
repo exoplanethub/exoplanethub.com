@@ -1,7 +1,7 @@
 .hero {
   position: relative;
   min-height: 100vh;
-  background: linear-gradient(180deg, #0B1020 0%, #121933 100%);
+  background: linear-gradient(180deg, var(--color-background) 0%, var(--color-surface) 100%);
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -37,13 +37,13 @@
 }
 
 .title {
-  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  font-family: var(--font-heading);
   font-size: 64px;
   font-weight: 700;
   line-height: 1.15;
-  color: #E9EDF8;
+  color: var(--color-text);
   margin: 0 0 24px;
-  background: linear-gradient(135deg, #E9EDF8 0%, #56D4C2 100%);
+  background: linear-gradient(135deg, var(--color-text) 0%, var(--color-accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -52,7 +52,7 @@
 .subtitle {
   font-size: 20px;
   line-height: 1.65;
-  color: #A7B0C8;
+  color: var(--color-text-muted);
   max-width: 700px;
   margin: 0 auto 40px;
 }
@@ -65,8 +65,8 @@
 }
 
 .primaryBtn {
-  background: #E1B864;
-  color: #0B1020;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
   border: none;
   border-radius: 999px;
   height: 44px;
@@ -79,13 +79,13 @@
 
 .primaryBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 40px rgba(225, 184, 100, 0.3);
+  box-shadow: 0 14px 40px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 .secondaryBtn {
   background: transparent;
-  color: #E9EDF8;
-  border: 2px solid #2B3566;
+  color: var(--color-text);
+  border: 2px solid var(--color-border);
   border-radius: 999px;
   height: 44px;
   padding: 0 20px;
@@ -96,8 +96,8 @@
 }
 
 .secondaryBtn:hover {
-  border-color: #56D4C2;
-  color: #56D4C2;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .stats {
@@ -112,16 +112,16 @@
 }
 
 .statValue {
-  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  font-family: var(--font-heading);
   font-size: 36px;
   font-weight: 700;
-  color: #E1B864;
+  color: var(--color-primary);
   margin-bottom: 8px;
 }
 
 .statLabel {
   font-size: 14px;
-  color: #A7B0C8;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
