@@ -86,7 +86,7 @@ export async function GET() {
         distanceLightYears: p.sy_dist ? parseFloat((p.sy_dist * 3.262).toFixed(2)) : 0,
         radius: p.pl_rade ? parseFloat(p.pl_rade.toFixed(2)) : 0,
         temperature: p.pl_eqt ? Math.round(p.pl_eqt) : 0,
-        type: determinePlanetType(p.pl_rade, p.pl_bmasse),
+        type: determinePlanetType(p.pl_rade),
         star: p.hostname,
         discovered: p.disc_year || 2000,
         imageUrl: ''
