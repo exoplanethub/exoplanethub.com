@@ -1,0 +1,141 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+  animation: fadeIn 0.2s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.closeBtn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  background: var(--color-border);
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+  padding: 32px 32px 24px;
+}
+
+.content {
+  padding: 0 32px 32px;
+}
+
+.intro {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  margin: 0 0 32px;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin: 0 0 16px;
+}
+
+.formula {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--color-text);
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+
+.description {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0;
+  font-style: italic;
+}
+
+.list {
+  margin: 0;
+  padding-left: 24px;
+  color: var(--color-text-muted);
+}
+
+.list li {
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.list li strong {
+  color: var(--color-text);
+}
+
+.reference {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 32px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 22px;
+    padding: 24px 24px 16px;
+  }
+  
+  .content {
+    padding: 0 24px 24px;
+  }
+  
+  .formula {
+    font-size: 12px;
+  }
+}

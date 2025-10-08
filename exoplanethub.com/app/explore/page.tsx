@@ -1,21 +1,43 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PlanetCard from '@/components/explore/PlanetCard';
 import PlanetTable from '@/components/explore/PlanetTable';
 import PlanetModal from '@/components/explore/PlanetModal';
-import { mockPlanets, Planet } from '@/lib/mockPlanets';
+import ESIModal from '@/components/explore/ESIModal';
+import { Planet } from '@/lib/mockPlanets';
 import styles from './page.module.css';
 
 export default function ExplorePage() {
   const [selectedPlanet, setSelectedPlanet] = useState<Planet | null>(null);
   const [view, setView] = useState<'grid' | 'table'>('grid');
+  const [planets, setPlanets] = useState<Planet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showESIModal, setShowESIModal] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/planets')
+      .then(res => res.json())
+      .then(data => {
+        console.log('Loaded planets on client:', data.length);
+        console.log('First planet:', data[0]);
+        setPlanets(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error loading planets:', err);
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Most Habitable Exoplanets</h1>
         <p className={styles.subtitle}>
-          Ranked by potential to support life based on size, temperature, and distance from their star
+          Ranked by Earth Similarity Index (ESI)
+          <button className={styles.infoBtn} onClick={() => setShowESIModal(true)} title="How is this calculated?">
+            ℹ️
+          </button>
         </p>
         <div className={styles.viewToggle}>
           <button 
@@ -34,9 +56,11 @@ export default function ExplorePage() {
       </div>
       
       <div className={styles.content}>
-        {view === 'grid' ? (
+        {loading ? (
+          <div className={styles.loading}>Loading exoplanets...</div>
+        ) : view === 'grid' ? (
           <div className={styles.grid}>
-            {mockPlanets.map((planet) => (
+            {planets.map((planet) => (
               <PlanetCard 
                 key={planet.id} 
                 planet={planet} 
@@ -46,7 +70,7 @@ export default function ExplorePage() {
           </div>
         ) : (
           <PlanetTable 
-            planets={mockPlanets}
+            planets={planets}
             onPlanetClick={setSelectedPlanet}
           />
         )}
@@ -57,6 +81,10 @@ export default function ExplorePage() {
           planet={selectedPlanet} 
           onClose={() => setSelectedPlanet(null)}
         />
+      )}
+      
+      {showESIModal && (
+        <ESIModal onClose={() => setShowESIModal(false)} />
       )}
     </main>
   );
