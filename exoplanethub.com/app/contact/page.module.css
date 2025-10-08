@@ -1,0 +1,76 @@
+.page {
+  min-height: 100vh;
+  background: var(--color-background);
+  padding: 120px 24px 64px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 40px;
+  text-align: center;
+}
+
+.content {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 40px;
+}
+
+.content p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--color-text-muted);
+  margin: 0 0 24px;
+}
+
+.emailSection {
+  text-align: center;
+  padding: 32px 0;
+  margin: 32px 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.subtitle {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 16px;
+}
+
+.email {
+  display: inline-block;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.email:hover {
+  color: var(--color-accent);
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 32px;
+  }
+  
+  .content {
+    padding: 24px;
+  }
+  
+  .email {
+    font-size: 18px;
+  }
+}

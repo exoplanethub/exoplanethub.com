@@ -24,9 +24,9 @@ export default function NavBar() {
         </button>
 
         <div className={`${styles.links} ${isOpen ? styles.showMobile : ''}`}>
-          <a href="#explore" className={styles.link} onClick={() => setIsOpen(false)}>Explore</a>
-          <a href="#database" className={styles.link} onClick={() => setIsOpen(false)}>Database</a>
-          <a href="#about" className={styles.link} onClick={() => setIsOpen(false)}>About</a>
+          <a href="/explore" className={styles.link} onClick={() => setIsOpen(false)}>Explore</a>
+          <a href="/about" className={styles.link} onClick={() => setIsOpen(false)}>About</a>
+          <a href="/contact" className={styles.link} onClick={() => setIsOpen(false)}>Contact</a>
         </div>
       </div>
     </nav>
