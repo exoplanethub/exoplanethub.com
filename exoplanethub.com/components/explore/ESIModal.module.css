@@ -125,6 +125,17 @@
   border-top: 1px solid var(--color-border);
 }
 
+.reference a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.reference a:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
 @media (max-width: 768px) {
   .title {
     font-size: 22px;

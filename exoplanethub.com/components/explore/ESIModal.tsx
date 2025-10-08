@@ -69,7 +69,9 @@ export default function ESIModal({ onClose }: ESIModalProps) {
           </div>
           
           <p className={styles.reference}>
-            Reference: Schulze-Makuch et al. (2011), "A Two-Tiered Approach to Assessing the Habitability of Exoplanets"
+            Reference: <a href="https://www.liebertpub.com/doi/10.1089/ast.2010.0592" target="_blank" rel="noopener noreferrer">
+              Schulze-Makuch et al. (2011), "A Two-Tiered Approach to Assessing the Habitability of Exoplanets"
+            </a>
           </p>
         </div>
       </div>
