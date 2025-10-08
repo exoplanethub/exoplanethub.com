@@ -25,12 +25,12 @@ export default function ESIModal({ onClose }: ESIModalProps) {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <button className={styles.closeBtn} onClick={onClose}>×</button>
         
-        <h2 className={styles.title}>Habitability Score Calculation</h2>
+        <h2 className={styles.title}>Earth Similarity Index (ESI)</h2>
         
         <div className={styles.content}>
           <p className={styles.intro}>
-            Our habitability scores are based on the <strong>Earth Similarity Index (ESI)</strong>, 
-            a peer-reviewed scientific metric developed by planetary scientists.
+            Our scores are based on the <strong>Earth Similarity Index (ESI)</strong>, 
+            a peer-reviewed scientific metric that measures how similar a planet is to Earth in physical characteristics—not a guarantee of habitability.
           </p>
           
           <div className={styles.section}>
@@ -61,11 +61,14 @@ export default function ESIModal({ onClose }: ESIModalProps) {
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Score Interpretation</h3>
             <ul className={styles.list}>
-              <li><strong>85-100:</strong> Highly Earth-like, excellent habitability potential</li>
-              <li><strong>70-84:</strong> Good Earth similarity, promising for life</li>
-              <li><strong>50-69:</strong> Moderate similarity, possible habitability</li>
-              <li><strong>Below 50:</strong> Low Earth similarity, less likely habitable</li>
+              <li><strong>85-100:</strong> Highly Earth-like in size, temperature, and mass</li>
+              <li><strong>70-84:</strong> Good Earth similarity</li>
+              <li><strong>50-69:</strong> Moderate Earth similarity</li>
+              <li><strong>Below 50:</strong> Low Earth similarity</li>
             </ul>
+            <p className={styles.description}>
+              <strong>Important:</strong> A high ESI score indicates physical similarity to Earth, but does not account for atmosphere composition, magnetic fields, stellar activity, or other factors critical for life.
+            </p>
           </div>
           
           <p className={styles.reference}>

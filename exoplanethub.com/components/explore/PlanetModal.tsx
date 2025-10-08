@@ -72,17 +72,6 @@ export default function PlanetModal({ planet, onClose }: PlanetModalProps) {
               </div>
             </div>
           </div>
-          
-          <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>About This World</h3>
-            <p className={styles.description}>
-              {planet.name} is a {planet.type.toLowerCase()} exoplanet orbiting {planet.star}, 
-              located approximately {planet.distanceLightYears} light-years from Earth. 
-              With a habitability score of {planet.habitabilityScore}, this world shows 
-              {planet.habitabilityScore >= 85 ? ' exceptional' : planet.habitabilityScore >= 75 ? ' promising' : ' moderate'} potential 
-              for supporting life as we know it.
-            </p>
-          </div>
         </div>
       </div>
     </div>
