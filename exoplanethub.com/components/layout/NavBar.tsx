@@ -8,10 +8,10 @@ export default function NavBar() {
   return (
     <nav className={styles.nav}>
       <div className={styles.container}>
-        <div className={styles.logo}>
+        <a href="/" className={styles.logo} onClick={() => setIsOpen(false)}>
           <span className={styles.logoIcon}>🪐</span>
           <span className={styles.logoText}>ExoplanetHub</span>
-        </div>
+        </a>
         
         <button 
           className={`${styles.hamburger} ${isOpen ? styles.open : ''}`}

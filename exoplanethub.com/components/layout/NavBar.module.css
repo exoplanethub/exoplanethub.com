@@ -26,6 +26,8 @@
   font-weight: 700;
   font-size: 20px;
   color: var(--color-primary);
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .logoIcon {
