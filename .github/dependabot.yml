@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # Frontend dependencies
+  - package-ecosystem: "npm"
+    directory: "/exoplanethub.com"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Backend dependencies
+  - package-ecosystem: "pip"
+    directory: "/aws-backend/lambda/sync"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3

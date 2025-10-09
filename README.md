@@ -1,5 +1,9 @@
 # ExoplanetHub 🪐
 
+[![Deploy AWS Backend](https://github.com/exoplanethub/exoplanethub.com/actions/workflows/deploy-aws-backend.yml/badge.svg)](https://github.com/exoplanethub/exoplanethub.com/actions/workflows/deploy-aws-backend.yml)
+[![CodeQL](https://github.com/exoplanethub/exoplanethub.com/actions/workflows/codeql.yml/badge.svg)](https://github.com/exoplanethub/exoplanethub.com/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A modern web application for exploring confirmed exoplanets using real-time data from NASA's Exoplanet Archive. Built with Next.js and powered by a serverless AWS backend.
 
 ## Features
@@ -91,6 +95,17 @@ sam deploy --guided
 
 Exoplanet data is sourced from [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/) using their TAP API.
 
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Documentation
+
+- [Architecture Overview](docs/architecture.md)
+- [Roadmap](ROADMAP.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security Policy](SECURITY.md)
+
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE) for details.
