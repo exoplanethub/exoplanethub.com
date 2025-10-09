@@ -1,0 +1,11 @@
+# Credentials
+.env*
+!.env.example
+**/samconfig.toml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
