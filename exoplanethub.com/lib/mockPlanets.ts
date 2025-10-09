@@ -5,7 +5,7 @@ export interface Planet {
   distanceLightYears: number;
   radius: number;
   temperature: number;
-  type: 'Rocky' | 'Gas Giant' | 'Ice Giant' | 'Super Earth';
+  type: string;
   star: string;
   discovered: number;
   imageUrl: string;

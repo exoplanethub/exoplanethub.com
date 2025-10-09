@@ -22,21 +22,12 @@ export default function PlanetModal({ planet, onClose }: PlanetModalProps) {
     };
   }, [onClose]);
 
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return styles.scoreHigh;
-    if (score >= 75) return styles.scoreMedium;
-    return styles.scoreLow;
-  };
-
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <button className={styles.closeBtn} onClick={onClose}>×</button>
           <div className={styles.planetIcon}>🪐</div>
-          <div className={`${styles.score} ${getScoreColor(planet.habitabilityScore)}`}>
-            {planet.habitabilityScore}
-          </div>
         </div>
         
         <div className={styles.content}>
@@ -67,8 +58,8 @@ export default function PlanetModal({ planet, onClose }: PlanetModalProps) {
                 <span className={styles.statValue}>{planet.discovered}</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Habitability Score</span>
-                <span className={styles.statValue}>{planet.habitabilityScore}/100</span>
+                <span className={styles.statLabel}>Detection Method</span>
+                <span className={styles.statValue}>{planet.type}</span>
               </div>
             </div>
           </div>

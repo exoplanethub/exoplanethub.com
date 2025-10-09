@@ -8,19 +8,10 @@ interface PlanetCardProps {
 }
 
 export default function PlanetCard({ planet, onClick }: PlanetCardProps) {
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return styles.scoreHigh;
-    if (score >= 75) return styles.scoreMedium;
-    return styles.scoreLow;
-  };
-
   return (
     <div className={styles.card}>
       <div className={styles.imageContainer}>
         <div className={styles.imagePlaceholder}>🪐</div>
-        <div className={`${styles.score} ${getScoreColor(planet.habitabilityScore)}`}>
-          {planet.habitabilityScore}
-        </div>
       </div>
       
       <div className={styles.content}>
