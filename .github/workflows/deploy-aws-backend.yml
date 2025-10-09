@@ -39,4 +39,10 @@ jobs:
         working-directory: ./aws-backend
         run: |
           sam build
-          sam deploy --config-env ${{ steps.env.outputs.environment }} --no-confirm-changeset --no-fail-on-empty-changeset
+          sam deploy \
+            --stack-name exoplanethub-${{ steps.env.outputs.environment }} \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides Environment=${{ steps.env.outputs.environment }} \
+            --resolve-s3 \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset
