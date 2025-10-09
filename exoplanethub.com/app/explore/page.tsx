@@ -30,7 +30,18 @@ export default function ExplorePage() {
         </p>
       </div>
       <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
+        <div className={styles.solarSystem}>
+          <div className={styles.sun}></div>
+          <div className={styles.orbit}>
+            <div className={styles.planet}></div>
+          </div>
+          <div className={`${styles.orbit} ${styles.orbit2}`}>
+            <div className={`${styles.planet} ${styles.planet2}`}></div>
+          </div>
+          <div className={`${styles.orbit} ${styles.orbit3}`}>
+            <div className={`${styles.planet} ${styles.planet3}`}></div>
+          </div>
+        </div>
         <p className={styles.loadingText}>Loading exoplanets...</p>
       </div>
     </main>

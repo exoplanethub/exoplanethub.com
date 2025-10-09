@@ -103,17 +103,85 @@
   gap: 24px;
 }
 
-.spinner {
-  width: 60px;
-  height: 60px;
-  border: 4px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.solarSystem {
+  position: relative;
+  width: 200px;
+  height: 200px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.sun {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(circle, var(--color-accent), var(--color-primary));
+  border-radius: 50%;
+  box-shadow: 0 0 20px var(--color-primary);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  animation: rotate 3s linear infinite;
+}
+
+.orbit {
+  width: 80px;
+  height: 80px;
+}
+
+.orbit2 {
+  width: 120px;
+  height: 120px;
+  animation-duration: 5s;
+}
+
+.orbit3 {
+  width: 160px;
+  height: 160px;
+  animation-duration: 7s;
+}
+
+.planet {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--color-primary);
+}
+
+.planet2 {
+  width: 10px;
+  height: 10px;
+  background: var(--color-accent);
+  box-shadow: 0 0 8px var(--color-accent);
+}
+
+.planet3 {
+  width: 8px;
+  height: 8px;
+  background: #60a5fa;
+  box-shadow: 0 0 6px #60a5fa;
+}
+
+@keyframes rotate {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.1); }
 }
 
 .loadingText {
