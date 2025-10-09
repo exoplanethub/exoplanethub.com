@@ -21,13 +21,20 @@ export default function ExplorePage() {
       });
   }, []);
 
-  if (loading) {
-    return (
-      <main className={styles.page}>
-        <div className={styles.loading}>Loading exoplanets...</div>
-      </main>
-    );
-  }
-
-  return <ExploreClient planets={planets} />;
+  return loading ? (
+    <main className={styles.page}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Explore Exoplanets</h1>
+        <p className={styles.subtitle}>
+          Browse all confirmed exoplanets from NASA&apos;s archive
+        </p>
+      </div>
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+        <p className={styles.loadingText}>Loading exoplanets...</p>
+      </div>
+    </main>
+  ) : (
+    <ExploreClient planets={planets} />
+  );
 }
