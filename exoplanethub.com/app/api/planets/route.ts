@@ -12,6 +12,8 @@ const client = new DynamoDBClient({
 
 const docClient = DynamoDBDocumentClient.from(client);
 
+export const revalidate = 21600; // 6 hours in seconds
+
 export async function GET() {
   try {
     const command = new ScanCommand({
