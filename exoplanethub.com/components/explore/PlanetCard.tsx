@@ -15,21 +15,21 @@ export default function PlanetCard({ planet, onClick }: PlanetCardProps) {
       </div>
       
       <div className={styles.content}>
-        <h3 className={styles.name}>{planet.name}</h3>
-        <p className={styles.star}>{planet.star}</p>
+        <h3 className={styles.name}>{planet.pl_name}</h3>
+        <p className={styles.star}>{planet.hostname || 'Unknown'}</p>
         
         <div className={styles.stats}>
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Distance</span>
-            <span className={styles.statValue}>{planet.distanceLightYears} ly</span>
+            <span className={styles.statValue}>{planet.sy_dist ? planet.sy_dist.toFixed(2) : 'N/A'} pc</span>
           </div>
           <div className={styles.statItem}>
-            <span className={styles.statLabel}>Size</span>
-            <span className={styles.statValue}>{planet.radius}× Earth</span>
+            <span className={styles.statLabel}>Radius</span>
+            <span className={styles.statValue}>{planet.pl_rade ? planet.pl_rade.toFixed(2) : 'N/A'}× Earth</span>
           </div>
           <div className={styles.statItem}>
-            <span className={styles.statLabel}>Type</span>
-            <span className={styles.statValue}>{planet.type}</span>
+            <span className={styles.statLabel}>Method</span>
+            <span className={styles.statValue}>{planet.discoverymethod || 'N/A'}</span>
           </div>
         </div>
         

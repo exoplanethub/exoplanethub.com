@@ -40,7 +40,7 @@ export default function ExploreClient({ planets }: { planets: Planet[] }) {
           <div className={styles.grid}>
             {planets.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((planet) => (
               <PlanetCard 
-                key={planet.id} 
+                key={planet.pl_name} 
                 planet={planet} 
                 onClick={() => setSelectedPlanet(planet)}
               />
