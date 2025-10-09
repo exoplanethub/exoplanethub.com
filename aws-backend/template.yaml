@@ -13,7 +13,7 @@ Parameters:
 
 Globals:
   Function:
-    Timeout: 300
+    Timeout: 600
     MemorySize: 512
     Runtime: python3.13
 
@@ -64,10 +64,10 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref ExoplanetsTable
       Events:
-        HourlySync:
+        SixHourlySync:
           Type: Schedule
           Properties:
-            Schedule: rate(1 hour)
+            Schedule: rate(6 hours)
             Enabled: true
 
 Outputs:
