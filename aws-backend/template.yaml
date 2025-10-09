@@ -78,7 +78,9 @@ Resources:
       Handler: app.lambda_handler
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref ExoplanetsTable
+            TableName: exoplanets-dev
+        - DynamoDBCrudPolicy:
+            TableName: exoplanets-main
 
 Outputs:
   ExoplanetsTableName:
