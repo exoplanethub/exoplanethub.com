@@ -8,13 +8,13 @@ interface PlanetTableProps {
   onPlanetClick: (planet: Planet) => void;
 }
 
-type SortKey = 'name' | 'habitabilityScore' | 'distanceLightYears' | 'radius' | 'type';
+type SortKey = 'name' | 'distanceLightYears' | 'radius' | 'type' | 'discovered';
 type SortOrder = 'asc' | 'desc';
 
 export default function PlanetTable({ planets, onPlanetClick }: PlanetTableProps) {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [sortKey, setSortKey] = useState<SortKey>('habitabilityScore');
+  const [sortKey, setSortKey] = useState<SortKey>('discovered');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   const handleSort = (key: SortKey) => {
@@ -55,12 +55,6 @@ export default function PlanetTable({ planets, onPlanetClick }: PlanetTableProps
     return result;
   }, [planets, search, typeFilter, sortKey, sortOrder]);
 
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return styles.scoreHigh;
-    if (score >= 75) return styles.scoreMedium;
-    return styles.scoreLow;
-  };
-
   const types = ['all', ...Array.from(new Set(planets.map(p => p.type)))];
 
   return (
@@ -90,37 +84,33 @@ export default function PlanetTable({ planets, onPlanetClick }: PlanetTableProps
         <table className={styles.table}>
           <thead>
             <tr>
-              <th onClick={() => handleSort('habitabilityScore')}>
-                Score {sortKey === 'habitabilityScore' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
-              </th>
               <th onClick={() => handleSort('name')}>
                 Planet {sortKey === 'name' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
               </th>
+              <th>Star</th>
               <th onClick={() => handleSort('type')}>
                 Type {sortKey === 'type' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
+              </th>
+              <th onClick={() => handleSort('radius')}>
+                Radius {sortKey === 'radius' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
               </th>
               <th onClick={() => handleSort('distanceLightYears')}>
                 Distance {sortKey === 'distanceLightYears' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
               </th>
-              <th onClick={() => handleSort('radius')}>
-                Size {sortKey === 'radius' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
+              <th onClick={() => handleSort('discovered')}>
+                Discovered {sortKey === 'discovered' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
               </th>
-              <th>Star</th>
             </tr>
           </thead>
           <tbody>
             {filteredAndSorted.map((planet) => (
               <tr key={planet.id} onClick={() => onPlanetClick(planet)}>
-                <td>
-                  <div className={`${styles.score} ${getScoreColor(planet.habitabilityScore)}`}>
-                    {planet.habitabilityScore}
-                  </div>
-                </td>
                 <td className={styles.planetName}>{planet.name}</td>
-                <td>{planet.type}</td>
-                <td>{planet.distanceLightYears} ly</td>
-                <td>{planet.radius}× Earth</td>
                 <td>{planet.star}</td>
+                <td>{planet.type}</td>
+                <td>{planet.radius}× Earth</td>
+                <td>{planet.distanceLightYears} ly</td>
+                <td>{planet.discovered}</td>
               </tr>
             ))}
           </tbody>

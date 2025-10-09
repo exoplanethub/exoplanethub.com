@@ -30,15 +30,9 @@ export default function ExplorePage() {
   return (
     <main className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Most Earth-Like Exoplanets</h1>
+        <h1 className={styles.title}>Explore Exoplanets</h1>
         <p className={styles.subtitle}>
-          Ranked by Earth Similarity Index (ESI)
-          <button className={styles.infoBtn} onClick={() => setShowESIModal(true)} title="How is this calculated?">
-            ℹ️
-          </button>
-        </p>
-        <p className={styles.disclaimer}>
-          Planets with high similarity to Earth in size, temperature, and mass—potential candidates for habitability.
+          Browse all confirmed exoplanets from NASA's archive
         </p>
         <div className={styles.viewToggle}>
           <button 
@@ -84,9 +78,7 @@ export default function ExplorePage() {
         />
       )}
       
-      {showESIModal && (
-        <ESIModal onClose={() => setShowESIModal(false)} />
-      )}
+
     </main>
   );
 }
