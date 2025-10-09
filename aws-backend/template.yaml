@@ -70,6 +70,16 @@ Resources:
             Schedule: rate(6 hours)
             Enabled: true
 
+  CleanupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub exoplanet-cleanup-${Environment}
+      CodeUri: lambda/cleanup/
+      Handler: app.lambda_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ExoplanetsTable
+
 Outputs:
   ExoplanetsTableName:
     Description: DynamoDB table name
