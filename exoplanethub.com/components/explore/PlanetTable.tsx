@@ -5,13 +5,16 @@ import styles from './PlanetTable.module.css';
 
 interface PlanetTableProps {
   planets: Planet[];
+  page: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
   onPlanetClick: (planet: Planet) => void;
 }
 
 type SortKey = 'name' | 'distanceLightYears' | 'radius' | 'type' | 'discovered';
 type SortOrder = 'asc' | 'desc';
 
-export default function PlanetTable({ planets, onPlanetClick }: PlanetTableProps) {
+export default function PlanetTable({ planets, page, itemsPerPage, onPageChange, onPlanetClick }: PlanetTableProps) {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [sortKey, setSortKey] = useState<SortKey>('discovered');
@@ -54,6 +57,9 @@ export default function PlanetTable({ planets, onPlanetClick }: PlanetTableProps
 
     return result;
   }, [planets, search, typeFilter, sortKey, sortOrder]);
+
+  const paginatedPlanets = filteredAndSorted.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
 
   const types = ['all', ...Array.from(new Set(planets.map(p => p.type)))];
 
@@ -103,7 +109,7 @@ export default function PlanetTable({ planets, onPlanetClick }: PlanetTableProps
             </tr>
           </thead>
           <tbody>
-            {filteredAndSorted.map((planet) => (
+            {paginatedPlanets.map((planet) => (
               <tr key={planet.id} onClick={() => onPlanetClick(planet)}>
                 <td className={styles.planetName}>{planet.name}</td>
                 <td>{planet.star}</td>
@@ -115,6 +121,26 @@ export default function PlanetTable({ planets, onPlanetClick }: PlanetTableProps
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className={styles.pagination}>
+        <button 
+          onClick={() => onPageChange(Math.max(1, page - 1))} 
+          disabled={page === 1}
+          className={styles.paginationBtn}
+        >
+          Previous
+        </button>
+        <span className={styles.pageInfo}>
+          Page {page} of {totalPages} ({filteredAndSorted.length} planets)
+        </span>
+        <button 
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))} 
+          disabled={page === totalPages}
+          className={styles.paginationBtn}
+        >
+          Next
+        </button>
       </div>
     </>
   );

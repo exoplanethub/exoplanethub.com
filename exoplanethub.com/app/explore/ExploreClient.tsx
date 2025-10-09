@@ -9,6 +9,8 @@ import styles from './page.module.css';
 export default function ExploreClient({ planets }: { planets: Planet[] }) {
   const [selectedPlanet, setSelectedPlanet] = useState<Planet | null>(null);
   const [view, setView] = useState<'grid' | 'table'>('table');
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 50;
 
   return (
     <main className={styles.page}>
@@ -36,7 +38,7 @@ export default function ExploreClient({ planets }: { planets: Planet[] }) {
       <div className={styles.content}>
         {view === 'grid' ? (
           <div className={styles.grid}>
-            {planets.map((planet) => (
+            {planets.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((planet) => (
               <PlanetCard 
                 key={planet.id} 
                 planet={planet} 
@@ -47,10 +49,35 @@ export default function ExploreClient({ planets }: { planets: Planet[] }) {
         ) : (
           <PlanetTable 
             planets={planets}
+            page={page}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setPage}
             onPlanetClick={setSelectedPlanet}
           />
         )}
       </div>
+      
+      {view === 'grid' && (
+        <div className={styles.pagination}>
+          <button 
+            onClick={() => setPage(p => Math.max(1, p - 1))} 
+            disabled={page === 1}
+            className={styles.paginationBtn}
+          >
+            Previous
+          </button>
+          <span className={styles.pageInfo}>
+            Page {page} of {Math.ceil(planets.length / itemsPerPage)}
+          </span>
+          <button 
+            onClick={() => setPage(p => Math.min(Math.ceil(planets.length / itemsPerPage), p + 1))} 
+            disabled={page === Math.ceil(planets.length / itemsPerPage)}
+            className={styles.paginationBtn}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {selectedPlanet && (
         <PlanetModal 
