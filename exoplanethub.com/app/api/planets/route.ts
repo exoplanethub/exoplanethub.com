@@ -1,45 +1,16 @@
 import { NextResponse } from 'next/server';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
 
-interface NASAPlanet {
-  pl_name: string;
-  hostname: string;
-  pl_rade: number;
-  pl_eqt: number;
-  sy_dist: number;
-  pl_orbsmax: number;
-  pl_bmasse: number;
-  disc_year: number;
-}
+const client = new DynamoDBClient({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
 
-function calculateHabitabilityScore(planet: NASAPlanet): number {
-  const EARTH_RADIUS = 1.0;
-  const EARTH_TEMP = 288;
-  const EARTH_MASS = 1.0;
-  
-  const components = [];
-  
-  if (planet.pl_rade) {
-    const radiusComponent = 1 - Math.abs((planet.pl_rade - EARTH_RADIUS) / (planet.pl_rade + EARTH_RADIUS));
-    components.push(radiusComponent);
-  }
-  
-  if (planet.pl_eqt) {
-    const tempComponent = 1 - Math.abs((planet.pl_eqt - EARTH_TEMP) / (planet.pl_eqt + EARTH_TEMP));
-    components.push(tempComponent);
-  }
-  
-  if (planet.pl_bmasse) {
-    const massComponent = 1 - Math.abs((planet.pl_bmasse - EARTH_MASS) / (planet.pl_bmasse + EARTH_MASS));
-    components.push(massComponent);
-  }
-  
-  if (components.length === 0) return 0;
-  
-  const product = components.reduce((acc, val) => acc * val, 1);
-  const esi = Math.pow(product, 1 / components.length);
-  
-  return Math.round(esi * 100);
-}
+const docClient = DynamoDBDocumentClient.from(client);
 
 function determinePlanetType(radius: number): string {
   if (!radius) return 'Unknown';
@@ -51,42 +22,28 @@ function determinePlanetType(radius: number): string {
 
 export async function GET() {
   try {
-    const query = `
-      SELECT TOP 500 pl_name, hostname, pl_rade, pl_eqt, sy_dist, pl_orbsmax, pl_bmasse, disc_year
-      FROM ps
-      WHERE pl_rade IS NOT NULL 
-      AND pl_eqt IS NOT NULL
-      AND sy_dist IS NOT NULL
-      AND pl_rade < 10
-      AND sy_dist < 1000
-    `;
-    
-    const url = `https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=${encodeURIComponent(query)}&format=json`;
-    
-    const response = await fetch(url, { cache: 'no-store' });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch from NASA API');
-    }
-    
-    const data: NASAPlanet[] = await response.json();
-    
+    const command = new ScanCommand({
+      TableName: process.env.EXOPLANETS_DATABASE_TABLE || 'exoplanets-dev',
+    });
+
+    const response = await docClient.send(command);
+    const data = response.Items || [];
+
     const planets = data
-      .map((p, index) => ({
-        id: String(index + 1),
+      .filter(p => p.pl_rade && p.pl_eqt && p.sy_dist)
+      .map((p) => ({
+        id: p.pl_name,
         name: p.pl_name,
-        habitabilityScore: calculateHabitabilityScore(p),
+        habitabilityScore: 0,
         distanceLightYears: p.sy_dist ? parseFloat((p.sy_dist * 3.262).toFixed(2)) : 0,
         radius: p.pl_rade ? parseFloat(p.pl_rade.toFixed(2)) : 0,
         temperature: p.pl_eqt ? Math.round(p.pl_eqt) : 0,
         type: determinePlanetType(p.pl_rade),
-        star: p.hostname,
+        star: p.hostname || 'Unknown',
         discovered: p.disc_year || 2000,
-        imageUrl: ''
-      }))
-      .sort((a, b) => b.habitabilityScore - a.habitabilityScore)
-      .slice(0, 100);
-    
+        imageUrl: '',
+      }));
+
     return NextResponse.json(planets);
   } catch (error) {
     console.error('Error fetching planets:', error);
