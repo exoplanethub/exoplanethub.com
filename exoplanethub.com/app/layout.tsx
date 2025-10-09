@@ -3,7 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/layout/NavBar";
 import { generateCSSVariables } from "@/lib/theme";
-
+// Push
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
