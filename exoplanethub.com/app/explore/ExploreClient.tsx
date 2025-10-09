@@ -15,7 +15,7 @@ export default function ExploreClient({ planets }: { planets: Planet[] }) {
       <div className={styles.header}>
         <h1 className={styles.title}>Explore Exoplanets</h1>
         <p className={styles.subtitle}>
-          Browse all confirmed exoplanets from NASA's archive
+          Browse all confirmed exoplanets from NASA&apos;s archive
         </p>
         <div className={styles.viewToggle}>
           <button 
