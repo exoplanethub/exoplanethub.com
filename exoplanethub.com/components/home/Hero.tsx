@@ -14,7 +14,7 @@ export default function Hero() {
           Discover <br />Earth-Like Worlds
         </h1>
         <p className={styles.subtitle}>
-          Find distant worlds with conditions that could support life.
+          Find distant worlds with conditions that could support life as we know it.
         </p>
         <a href="/explore" className={styles.primaryBtn}>Explore Exoplanets</a>
       </div>
