@@ -11,12 +11,12 @@ export default function Hero() {
       <div className={styles.stars}></div>
       <div className={styles.container}>
         <h1 className={styles.title}>
-          Discover the Most<br />Earth-Like Worlds
+          Discover <br />Earth-Like Worlds
         </h1>
         <p className={styles.subtitle}>
-          Explore exoplanets ranked by Earth similarity. Find distant worlds with conditions that could support life.
+          Find distant worlds with conditions that could support life.
         </p>
-        <a href="/explore" className={styles.primaryBtn}>Explore Earth-Like Planets</a>
+        <a href="/explore" className={styles.primaryBtn}>Explore Exoplanets</a>
       </div>
       <div className={styles.attribution}>
         Image: NASA/ESA/CSA James Webb Space Telescope
