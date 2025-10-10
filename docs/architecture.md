@@ -28,7 +28,6 @@ NASA Exoplanet Archive (TAP API)
 ### Data Storage
 - **DynamoDB Table**: Stores exoplanet records with partition key `pl_name`
 - **Global Secondary Indexes (GSIs)**: Enable efficient queries by discovery year, method, and other attributes
-- **Lambda Cleanup Function**: Removes stale records not present in latest NASA data
 
 ### Frontend
 - **Next.js 15**: Server-side rendering and static generation
