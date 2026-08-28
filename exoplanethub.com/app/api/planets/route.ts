@@ -1,26 +1,16 @@
 import { NextResponse } from 'next/server';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
-
-const client = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
-
-const docClient = DynamoDBDocumentClient.from(client);
+import { ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { documentClient, planetsTableName } from '@/lib/dynamo';
 
 export const revalidate = 21600; // 6 hours in seconds
 
 export async function GET() {
   try {
     const command = new ScanCommand({
-      TableName: process.env.EXOPLANETS_DATABASE_TABLE || 'exoplanets-dev',
+      TableName: planetsTableName,
     });
 
-    const response = await docClient.send(command);
+    const response = await documentClient.send(command);
     const planets = response.Items || [];
 
     return NextResponse.json(planets);
