@@ -1,20 +1,6 @@
 version: 2
 updates:
-  # Frontend dependencies
-  - package-ecosystem: "npm"
-    directory: "/exoplanethub.com"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-
-  # Backend dependencies
-  - package-ecosystem: "pip"
-    directory: "/aws-backend/lambda/sync"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-
-  # GitHub Actions
+  # Package drift is covered by scout; action versions are a supply-chain surface it does not watch.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

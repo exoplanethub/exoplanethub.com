@@ -2,26 +2,36 @@
   "name": "exoplanethub.com",
   "version": "0.1.1",
   "private": true,
+  "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.953.0",
-    "@aws-sdk/lib-dynamodb": "^3.953.0",
-    "next": "16.0.10",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "@aws-sdk/client-dynamodb": "^3.1120.0",
+    "@aws-sdk/lib-dynamodb": "^3.1120.0",
+    "next": "16.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.6",
     "@types/node": "^25.0.3",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.1.0",
     "eslint": "^9.39.2",
-    "eslint-config-next": "16.0.10",
-    "typescript": "^5.9.3"
+    "eslint-config-next": "16.3.3",
+    "jsdom": "^30.0.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
   }
 }
