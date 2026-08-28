@@ -42,20 +42,20 @@ The app already ships the full dataset to the client and does all sorting/filter
 
 **Decision 3 — nulls are defined out of existence at the edge.** `computeESI` returns `null` for <2 components; the UI never special-cases missing NASA fields, only `esi: null` (badge omitted / "—", sorts last). The current table comparator misorders null/undefined values; the ESI sort must handle nulls-last explicitly.
 
-**Decision 4 — fix the truncated Scan (prerequisite for correct sorting).** The route issues a single `ScanCommand`; DynamoDB caps each page at 1MB, and ~6,000 items × 20 attributes exceeds that, so the app today likely renders only the first page of the table. Any "most Earth-like" sort over a truncated dataset is silently wrong, so this epic includes looping on `LastEvaluatedKey`.
+**Decision 4 — fix the truncated Scan (prerequisite for correct sorting).** The route issues a single `ScanCommand`; DynamoDB caps each page at 1MB, and ~6,000 items × 20 attributes exceeds that, so the app today likely renders only the first page of the table. Any "most Earth-like" sort over a truncated dataset is silently wrong, so this epic includes looping on `LastEvaluatedKey`. This is open bug #5 — task 2 resolves it, and #5 should be closed into this epic rather than built twice.
 - *Alternative — leave as-is and fix separately:* rejected; ESI sorting's headline claim ("top Earth-like planets") would be false on day one.
 
-**Decision 5 — delete the dead schema.** Remove `habitability_score` from `AttributeDefinitions` and the `habitability-index` GSI from `template.yaml`. It's unpopulated, mis-keyed for any top-N use, and already cost investigation time this cycle (the issue had to flag it "unverified").
+**Decision 5 — delete the dead schema.** Remove `habitability_score` from `AttributeDefinitions` and the `habitability-index` GSI from `template.yaml`. It's unpopulated, mis-keyed for any top-N use, and already cost investigation time this cycle (the issue had to flag it "unverified"). Deploy constraint: DynamoDB allows only one GSI creation/deletion per CloudFormation stack update, so task 5 ships as its own tag-triggered deploy, never bundled with any other GSI change.
 - *Alternative — keep it for future server-side ranking:* rejected; a future ranking GSI would need different keys anyway (constant HASH + score RANGE), so this one has no salvage value.
 
 **Risk:** `pl_eqt` coverage in the archive is moderate; many planets will score on radius+mass only, and some (radius-only transit detections) won't score at all. That's correct behavior — an honest "—" beats a fabricated number — but the builder should sanity-check what fraction of planets get scores and note it in the PR.
 
 ## Task Breakdown
 1. `lib/esi.ts`: `computeESI` + `getESIBand` with unit tests (size: S)
-2. Paginate the Scan in `/api/planets` and enrich each item with `esi` (size: S)
+2. Paginate the Scan in `/api/planets` and enrich each item with `esi` — resolves bug #5 (size: S)
 3. ESI badge component; render on `PlanetCard`, wire its info affordance to `ESIModal` (size: M)
 4. ESI column in `PlanetTable` with nulls-last sorting and header info icon → `ESIModal` (size: M)
-5. Remove `habitability_score` attribute + `habitability-index` GSI from `template.yaml` (size: S)
+5. Remove `habitability_score` attribute + `habitability-index` GSI from `template.yaml` — must be its own deploy (one GSI change per stack update) (size: S)
 
 ## Open Questions
 - Q: The `habitability_score` attribute and `habitability-index` GSI in `template.yaml` are dead — never populated, and keyed so they couldn't serve "top N by ESI" even if they were. I recommend computing ESI in the frontend (per Decision 1) and deleting that schema (task 5). OK to delete, or do you want the score stored in DynamoDB to keep a server-side ranking option open?
