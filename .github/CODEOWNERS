@@ -1,0 +1,8 @@
+# Every change requires review from the repository owner.
+#
+# The branch rulesets on main and dev set require_code_owner_review, but that
+# rule matches nothing unless a CODEOWNERS file exists. Without this file the
+# rulesets' 2-approval requirement can be satisfied by any two accounts with
+# write access -- including the automation apps installed on this fork. This
+# file makes owner review structurally required rather than merely requested.
+* @zackrylangford
