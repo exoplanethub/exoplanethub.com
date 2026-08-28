@@ -12,11 +12,17 @@ export default function ExplorePage() {
     fetch('/api/planets')
       .then(res => res.json())
       .then(data => {
-        setPlanets(data);
+        if (Array.isArray(data)) {
+          setPlanets(data);
+        } else {
+          console.error('API returned non-array data:', data);
+          setPlanets([]);
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error('Error loading planets:', err);
+        setPlanets([]);
         setLoading(false);
       });
   }, []);
