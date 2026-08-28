@@ -1,11 +1,15 @@
+import 'server-only';
 import { QueryCommand, type QueryCommandOutput } from '@aws-sdk/lib-dynamodb';
 import { documentClient, planetsTableName } from '@/lib/dynamo';
-import { Planet } from '@/lib/mockPlanets';
 
-export type LatestDiscovery = Pick<
-  Planet,
-  'pl_name' | 'hostname' | 'disc_year' | 'discoverymethod'
->;
+// The sync Lambda writes absent NASA fields as null; disc_year is exempt because it keys
+// year-index, and DynamoDB leaves items without it out of the index entirely.
+export type LatestDiscovery = {
+  pl_name: string;
+  hostname: string | null;
+  disc_year: number;
+  discoverymethod: string | null;
+};
 
 export type LatestDiscoveriesResult =
   | { status: 'ok'; planets: LatestDiscovery[] }

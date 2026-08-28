@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { documentClient, planetsTableName } from '@/lib/dynamo';
 
-export const revalidate = 21600; // 6 hours in seconds
-
 export async function GET() {
   try {
     const command = new ScanCommand({

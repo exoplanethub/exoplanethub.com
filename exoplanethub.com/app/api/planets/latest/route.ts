@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchLatestDiscoveries } from '@/lib/latestDiscoveries';
 
-export const revalidate = 21600; // 6 hours in seconds
-
 export async function GET() {
   const result = await fetchLatestDiscoveries();
 

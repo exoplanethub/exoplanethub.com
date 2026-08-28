@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
-import { fetchLatestDiscoveries, type LatestDiscovery } from '@/lib/latestDiscoveries';
+import { connection } from 'next/server';
+import { fetchLatestDiscoveries } from '@/lib/latestDiscoveries';
 import styles from './LatestDiscoveries.module.css';
 
 const HEADING_ID = 'latest-discoveries-heading';
@@ -22,6 +23,8 @@ export default function LatestDiscoveries() {
 }
 
 async function DiscoveryList() {
+  // Defers this subtree to request time so a failed query costs one response, not a cached page.
+  await connection();
   const result = await fetchLatestDiscoveries();
 
   if (result.status === 'unavailable') {
@@ -37,7 +40,7 @@ async function DiscoveryList() {
   }
 
   return (
-    <ol className={styles.list}>
+    <ol role="list" className={styles.list}>
       {result.planets.map((planet) => (
         <li key={planet.pl_name} className={styles.item}>
           <h3 className={styles.name}>{planet.pl_name}</h3>
@@ -52,7 +55,7 @@ async function DiscoveryList() {
   );
 }
 
-function Fact({ label, value }: { label: string; value: LatestDiscovery[keyof LatestDiscovery] }) {
+function Fact({ label, value }: { label: string; value: string | number | null }) {
   return (
     <div className={styles.fact}>
       <dt className={styles.factLabel}>{label}</dt>
