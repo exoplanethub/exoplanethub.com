@@ -60,6 +60,12 @@ function renderedNames() {
     .map((row) => within(row).getAllByRole('cell')[0].textContent);
 }
 
+// Sort activation lives on the <th> itself today and moves to an inner button once #6 lands.
+function sortControl(name: RegExp) {
+  const header = screen.getByRole('columnheader', { name });
+  return within(header).queryByRole('button') ?? header;
+}
+
 describe('PlanetTable rendering', () => {
   it('renders one row per planet', () => {
     renderTable();
@@ -98,7 +104,7 @@ describe('PlanetTable sorting', () => {
     const user = userEvent.setup();
     renderTable();
 
-    await user.click(screen.getByRole('columnheader', { name: /planet/i }));
+    await user.click(sortControl(/planet/i));
 
     expect(renderedNames()).toEqual(['Gamma d', 'Beta c', 'Alpha b']);
   });
@@ -106,10 +112,9 @@ describe('PlanetTable sorting', () => {
   it('toggles direction when the active sort column is clicked again', async () => {
     const user = userEvent.setup();
     renderTable();
-    const planetHeader = screen.getByRole('columnheader', { name: /planet/i });
 
-    await user.click(planetHeader);
-    await user.click(planetHeader);
+    await user.click(sortControl(/planet/i));
+    await user.click(sortControl(/planet/i));
 
     expect(renderedNames()).toEqual(['Alpha b', 'Beta c', 'Gamma d']);
   });
@@ -124,7 +129,7 @@ describe('PlanetTable sorting', () => {
       ],
     });
 
-    await user.click(screen.getByRole('columnheader', { name: /distance/i }));
+    await user.click(sortControl(/distance/i));
 
     expect(renderedNames()).toEqual(['Hundred', 'Eighty', 'Nine']);
   });
@@ -186,5 +191,28 @@ describe('PlanetTable selection', () => {
     await user.click(screen.getByText('Alpha b'));
 
     expect(onPlanetClick).toHaveBeenCalledWith(ALPHA);
+  });
+});
+
+describe('PlanetTable accessibility (#6)', () => {
+  // Encodes the open keyboard barrier: both turn red the moment sort headers and rows become operable, forcing these markers out.
+  it.fails('exposes each sort header as a keyboard-activatable control reporting aria-sort', async () => {
+    const user = userEvent.setup();
+    renderTable();
+    const header = screen.getByRole('columnheader', { name: /planet/i });
+
+    await user.click(within(header).getByRole('button'));
+
+    expect(header).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  it.fails('opens a planet row from the keyboard', async () => {
+    const user = userEvent.setup();
+    const { onPlanetClick } = renderTable();
+
+    screen.getAllByRole('row')[1].focus();
+    await user.keyboard('{Enter}');
+
+    expect(onPlanetClick).toHaveBeenCalledWith(BETA);
   });
 });
