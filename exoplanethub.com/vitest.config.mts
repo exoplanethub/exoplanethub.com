@@ -8,7 +8,11 @@ const rootDir = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { '@': rootDir },
+    alias: {
+      '@': rootDir,
+      // The real module throws unless resolved under the react-server condition, which Vitest never sets.
+      'server-only': resolve(rootDir, 'vitest.server-only-stub.ts'),
+    },
   },
   test: {
     environment: 'jsdom',

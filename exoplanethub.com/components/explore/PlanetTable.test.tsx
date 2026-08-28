@@ -30,9 +30,10 @@ function makePlanet(overrides: Partial<Planet> & Pick<Planet, 'pl_name'>): Plane
   };
 }
 
-const ALPHA = makePlanet({ pl_name: 'Alpha b', hostname: 'Alpha', disc_year: 2015, sy_dist: 12.345, pl_rade: 1.234 });
-const BETA = makePlanet({ pl_name: 'Beta c', hostname: 'Beta', disc_year: 2021, discoverymethod: 'Radial Velocity' });
-const GAMMA = makePlanet({ pl_name: 'Gamma d', hostname: 'Gamma', disc_year: 2008 });
+// Hosts share no substring with their planet names, so a search can only match one clause of the filter.
+const ALPHA = makePlanet({ pl_name: 'Alpha b', hostname: 'Ross 128', disc_year: 2015, sy_dist: 12.345, pl_rade: 1.234 });
+const BETA = makePlanet({ pl_name: 'Beta c', hostname: 'Kepler-186', disc_year: 2021, discoverymethod: 'Radial Velocity' });
+const GAMMA = makePlanet({ pl_name: 'Gamma d', hostname: 'Wolf 359', disc_year: 2008 });
 
 function renderTable(props: Partial<React.ComponentProps<typeof PlanetTable>> = {}) {
   const onPageChange = vi.fn();
@@ -81,8 +82,8 @@ describe('PlanetTable rendering', () => {
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
     expect(cells[1]).toHaveTextContent('N/A');
     expect(cells[2]).toHaveTextContent('N/A');
-    expect(cells[3]).toHaveTextContent('N/A');
-    expect(cells[4]).toHaveTextContent('N/A');
+    expect(cells[3]).toHaveTextContent('N/A× Earth');
+    expect(cells[4]).toHaveTextContent('N/A pc');
   });
 });
 
@@ -143,7 +144,7 @@ describe('PlanetTable filtering', () => {
     const user = userEvent.setup();
     renderTable();
 
-    await user.type(screen.getByPlaceholderText(/search exoplanets/i), 'Gamma');
+    await user.type(screen.getByPlaceholderText(/search exoplanets/i), 'Wolf');
 
     expect(renderedNames()).toEqual(['Gamma d']);
   });
