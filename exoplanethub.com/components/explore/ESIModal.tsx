@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ESI_BANDS } from './esiBands';
 import styles from './ESIModal.module.css';
 
@@ -53,8 +54,17 @@ export default function ESIModal({ onClose }: ESIModalProps) {
     };
   }, [onClose]);
 
-  return (
-    <div className={styles.overlay} onClick={onClose}>
+  // Portalled because triggers sit inside cards that transform on hover, which would otherwise
+  // make the card the containing block for this fixed overlay and clip it to the card.
+  // Portalled events bubble the React tree, so the overlay must stop them reaching that card.
+  return createPortal(
+    <div
+      className={styles.overlay}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+    >
       <div
         ref={dialogRef}
         role="dialog"
@@ -133,6 +143,7 @@ export default function ESIModal({ onClose }: ESIModalProps) {
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 import { PlanetSummary } from '@/lib/mockPlanets';
+import ESIBadge from './ESIBadge';
 import styles from './PlanetCard.module.css';
 
 interface PlanetCardProps {
@@ -12,6 +13,7 @@ export default function PlanetCard({ planet, onClick }: PlanetCardProps) {
     <div className={styles.card}>
       <div className={styles.imageContainer}>
         <div className={styles.imagePlaceholder}>🪐</div>
+        <ESIBadge score={planet.esi} />
       </div>
       
       <div className={styles.content}>
