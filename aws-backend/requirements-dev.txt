@@ -1,0 +1,2 @@
+# Pinned to one tested major so CI cannot silently move to a new pytest.
+pytest>=8,<9

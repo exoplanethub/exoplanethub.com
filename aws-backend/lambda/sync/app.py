@@ -4,6 +4,7 @@ import urllib.request
 import boto3
 from decimal import Decimal
 from datetime import datetime
+from esi import compute_esi
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['TABLE_NAME'])
@@ -41,7 +42,11 @@ def lambda_handler(event, context):
                 'st_age': to_decimal(planet.get('st_age')),
                 'last_updated': timestamp
             }
-            
+
+            score = compute_esi(planet)
+            if score is not None:
+                item['esi'] = score
+
             batch.put_item(Item=item)
     
     return {

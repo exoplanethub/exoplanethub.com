@@ -26,22 +26,12 @@ Resources:
       AttributeDefinitions:
         - AttributeName: pl_name
           AttributeType: S
-        - AttributeName: habitability_score
-          AttributeType: N
         - AttributeName: disc_year
           AttributeType: N
       KeySchema:
         - AttributeName: pl_name
           KeyType: HASH
       GlobalSecondaryIndexes:
-        - IndexName: habitability-index
-          KeySchema:
-            - AttributeName: habitability_score
-              KeyType: HASH
-            - AttributeName: pl_name
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
         - IndexName: year-index
           KeySchema:
             - AttributeName: disc_year

@@ -88,8 +88,8 @@ sam deploy --guided
 
 ### GitHub Secrets Required
 
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
+- `AWS_ROLE_ARN` — the IAM role the backend deploy workflow assumes via OIDC.
+  No long-lived access keys are stored; the workflow requests a short-lived token per run.
 
 ## Data Source
 

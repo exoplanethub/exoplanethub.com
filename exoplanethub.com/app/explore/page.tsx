@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import ExploreClient from './ExploreClient';
-import { Planet } from '@/lib/mockPlanets';
+import { PlanetSummary } from '@/lib/mockPlanets';
 import styles from './page.module.css';
 
 export default function ExplorePage() {
-  const [planets, setPlanets] = useState<Planet[]>([]);
+  const [planets, setPlanets] = useState<PlanetSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
