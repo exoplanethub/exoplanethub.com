@@ -68,7 +68,13 @@ export default function ESIModal({ onClose }: ESIModalProps) {
 
         <h2 id="esi-modal-title" className={styles.title}>Earth Similarity Index (ESI)</h2>
 
-        <div className={styles.content}>
+        {/* Focusable because this, not .modal, is the scroll container — an unfocusable scroller cannot be scrolled by keyboard. */}
+        <div
+          className={styles.content}
+          role="region"
+          aria-labelledby="esi-modal-title"
+          tabIndex={0}
+        >
           <p className={styles.intro}>
             Our scores are based on the <strong>Earth Similarity Index (ESI)</strong>,
             a peer-reviewed scientific metric that measures how similar a planet is to Earth in physical characteristics—not a guarantee of habitability.
@@ -101,7 +107,7 @@ export default function ESIModal({ onClose }: ESIModalProps) {
 
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Score Interpretation</h3>
-            <ul className={styles.bandList} aria-label="Score bands">
+            <ul className={styles.bandList} role="list" aria-label="Score bands">
               {ESI_BANDS.map((band) => (
                 <li key={band.label} className={styles.bandItem}>
                   <span className={styles.bandRange} style={band.style}>{band.range}</span>

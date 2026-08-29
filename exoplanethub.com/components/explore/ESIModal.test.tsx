@@ -68,6 +68,18 @@ describe('ESIModal', () => {
     }
   });
 
+  it('makes the scrolling region a named tab stop, so it can be scrolled by keyboard', async () => {
+    const { user, dialog } = await openModal();
+    const scrollRegion = within(dialog).getByRole('region');
+
+    expect(scrollRegion).toHaveAccessibleName('Earth Similarity Index (ESI)');
+
+    await user.tab();
+    await user.tab();
+
+    expect(scrollRegion).toHaveFocus();
+  });
+
   it('renders the score bands from the shared band table', async () => {
     const { dialog } = await openModal();
     const bandList = within(dialog).getByRole('list', { name: /score band/i });
