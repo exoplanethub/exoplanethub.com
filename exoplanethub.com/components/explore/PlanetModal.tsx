@@ -1,10 +1,10 @@
 'use client';
-import { Planet } from '@/lib/mockPlanets';
+import { PlanetSummary } from '@/lib/mockPlanets';
 import styles from './PlanetModal.module.css';
 import { useEffect } from 'react';
 
 interface PlanetModalProps {
-  planet: Planet;
+  planet: PlanetSummary;
   onClose: () => void;
 }
 

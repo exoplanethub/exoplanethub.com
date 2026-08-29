@@ -3,11 +3,11 @@ import { useState } from 'react';
 import PlanetCard from '@/components/explore/PlanetCard';
 import PlanetTable from '@/components/explore/PlanetTable';
 import PlanetModal from '@/components/explore/PlanetModal';
-import { Planet } from '@/lib/mockPlanets';
+import { PlanetSummary } from '@/lib/mockPlanets';
 import styles from './page.module.css';
 
-export default function ExploreClient({ planets }: { planets: Planet[] }) {
-  const [selectedPlanet, setSelectedPlanet] = useState<Planet | null>(null);
+export default function ExploreClient({ planets }: { planets: PlanetSummary[] }) {
+  const [selectedPlanet, setSelectedPlanet] = useState<PlanetSummary | null>(null);
   const [view, setView] = useState<'grid' | 'table'>('table');
   const [page, setPage] = useState(1);
   const itemsPerPage = 50;
