@@ -34,7 +34,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 16px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .table {
@@ -84,30 +84,68 @@
   color: var(--color-text);
 }
 
-.score {
+.esiHeaderContent {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  gap: 8px;
+}
+
+.table th.esiHeader {
+  cursor: default;
+}
+
+.table th.esiHeader:hover {
+  color: var(--color-text-muted);
+}
+
+.sortButton {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sortButton:hover {
+  color: var(--color-primary);
+}
+
+.sortButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.esiCell {
+  white-space: nowrap;
+}
+
+.esiScore {
+  display: inline-block;
+  min-width: 34px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: var(--font-heading);
+  font-size: 13px;
   font-weight: 700;
-  font-size: 14px;
+  text-align: center;
 }
 
-.scoreHigh {
-  background: var(--color-accent);
-  color: var(--color-background);
+.esiBand {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
-.scoreMedium {
-  background: var(--color-primary);
-  color: var(--color-primary-contrast);
-}
-
-.scoreLow {
-  background: var(--color-text-muted);
-  color: var(--color-background);
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .sortIcon {
@@ -152,11 +190,7 @@
 }
 
 @media (max-width: 768px) {
-  .tableContainer {
-    overflow-x: auto;
-  }
-  
   .table {
-    min-width: 600px;
+    min-width: 700px;
   }
 }

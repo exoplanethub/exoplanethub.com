@@ -39,6 +39,12 @@ describe('ESIBadge', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('renders a badge for a real score of 0, which is not the same as unmeasured', () => {
+    renderInActivatableContainer(0);
+
+    expect(screen.getByRole('button', { name: new RegExp(`ESI 0, ${getESIBand(0).label}`) })).toBeInTheDocument();
+  });
+
   it('opens the ESI explainer when activated', async () => {
     const { user } = renderInActivatableContainer(SCORE);
 

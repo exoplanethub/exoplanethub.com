@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Planet } from '@/lib/mockPlanets';
 import PlanetTable from '@/components/explore/PlanetTable';
+import { getESIBand } from '@/components/explore/esiBands';
 
 function makePlanet(overrides: Partial<Planet> & Pick<Planet, 'pl_name'>): Planet {
   return {
@@ -65,6 +66,27 @@ function sortControl(name: RegExp) {
   const header = screen.getByRole('columnheader', { name });
   return within(header).queryByRole('button') ?? header;
 }
+
+function esiHeader() {
+  return screen.getByRole('columnheader', { name: /esi/i });
+}
+
+function esiSortButton() {
+  return within(esiHeader()).getByRole('button', { name: /esi/i });
+}
+
+function esiInfoButton() {
+  return screen.getByRole('button', { name: 'About the Earth Similarity Index' });
+}
+
+function esiCell(rowIndex: number) {
+  return within(screen.getAllByRole('row')[rowIndex]).getAllByRole('cell')[6];
+}
+
+const SCORED = makePlanet({ pl_name: 'Scored', esi: 92 });
+const MIDDLING = makePlanet({ pl_name: 'Middling', esi: 55 });
+const ZERO = makePlanet({ pl_name: 'Zero', esi: 0 });
+const UNSCORED = makePlanet({ pl_name: 'Unscored' });
 
 describe('PlanetTable rendering', () => {
   it('renders one row per planet', () => {
@@ -160,6 +182,94 @@ describe('PlanetTable sorting', () => {
     await user.click(sortControl(/distance/i));
 
     expect(renderedNames()).toEqual(['Hundred', 'Eighty', 'Nine']);
+  });
+});
+
+describe('PlanetTable ESI column', () => {
+  it('shows the score and its band label, so the band is not carried by colour alone', () => {
+    renderTable({ planets: [SCORED] });
+
+    expect(esiCell(1)).toHaveTextContent('92');
+    expect(esiCell(1)).toHaveTextContent(getESIBand(92).label);
+  });
+
+  it('shows a dash with a spoken equivalent for the two-thirds of planets with no score', () => {
+    renderTable({ planets: [UNSCORED] });
+
+    expect(esiCell(1)).toHaveTextContent('—');
+    expect(esiCell(1)).toHaveTextContent('Not scored');
+  });
+
+  it('scores a planet at 0 rather than treating it as unmeasured', () => {
+    renderTable({ planets: [ZERO] });
+
+    expect(esiCell(1)).toHaveTextContent('0');
+    expect(esiCell(1)).not.toHaveTextContent('Not scored');
+  });
+
+  it('sorts unscored planets last in both directions, with a real 0 ranked among the scored', async () => {
+    const user = userEvent.setup();
+    renderTable({ planets: [UNSCORED, MIDDLING, ZERO, SCORED] });
+
+    await user.click(esiSortButton());
+    expect(renderedNames()).toEqual(['Scored', 'Middling', 'Zero', 'Unscored']);
+
+    await user.click(esiSortButton());
+    expect(renderedNames()).toEqual(['Zero', 'Middling', 'Scored', 'Unscored']);
+  });
+
+  it('reports its sort state through aria-sort as the direction toggles', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    expect(esiHeader()).toHaveAttribute('aria-sort', 'none');
+
+    await user.click(esiSortButton());
+    expect(esiHeader()).toHaveAttribute('aria-sort', 'descending');
+
+    await user.click(esiSortButton());
+    expect(esiHeader()).toHaveAttribute('aria-sort', 'ascending');
+  });
+
+  it('drops back to aria-sort="none" once another column takes over', async () => {
+    const user = userEvent.setup();
+    renderTable();
+    await user.click(esiSortButton());
+
+    await user.click(sortControl(/planet/i));
+
+    expect(esiHeader()).toHaveAttribute('aria-sort', 'none');
+  });
+
+  it('sorts from the keyboard, because the control is a real button', async () => {
+    const user = userEvent.setup();
+    renderTable({ planets: [UNSCORED, MIDDLING, SCORED] });
+
+    esiSortButton().focus();
+    await user.keyboard('{Enter}');
+
+    expect(renderedNames()).toEqual(['Scored', 'Middling', 'Unscored']);
+  });
+
+  it('opens the explainer from the info button without sorting', async () => {
+    const user = userEvent.setup();
+    renderTable({ planets: [UNSCORED, MIDDLING, SCORED] });
+    const orderBeforeClick = renderedNames();
+
+    await user.click(esiInfoButton());
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(renderedNames()).toEqual(orderBeforeClick);
+    expect(esiHeader()).toHaveAttribute('aria-sort', 'none');
+  });
+
+  it('does not select a planet when the header info button is used', async () => {
+    const user = userEvent.setup();
+    const { onPlanetClick } = renderTable();
+
+    await user.click(esiInfoButton());
+
+    expect(onPlanetClick).not.toHaveBeenCalled();
   });
 });
 

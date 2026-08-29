@@ -1,6 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { PlanetSummary } from '@/lib/mockPlanets';
+import ESIInfoButton from './ESIInfoButton';
+import { getESIBand } from './esiBands';
 import styles from './PlanetTable.module.css';
 
 interface PlanetTableProps {
@@ -11,7 +13,7 @@ interface PlanetTableProps {
   onPlanetClick: (planet: PlanetSummary) => void;
 }
 
-type SortKey = 'pl_name' | 'sy_dist' | 'pl_rade' | 'discoverymethod' | 'disc_year';
+type SortKey = 'pl_name' | 'sy_dist' | 'pl_rade' | 'discoverymethod' | 'disc_year' | 'esi';
 type SortOrder = 'asc' | 'desc';
 type SortValue = PlanetSummary[SortKey];
 
@@ -29,6 +31,26 @@ function compareSortValues(a: SortValue, b: SortValue, order: SortOrder): number
   }
 
   return (Number(a) - Number(b)) * direction;
+}
+
+function ESIScore({ score }: { score: number | undefined }) {
+  if (typeof score !== 'number') {
+    return (
+      <>
+        <span aria-hidden="true">—</span>
+        <span className={styles.visuallyHidden}>Not scored</span>
+      </>
+    );
+  }
+
+  const band = getESIBand(score);
+
+  return (
+    <>
+      <span className={styles.esiScore} style={band.style}>{score}</span>
+      <span className={styles.esiBand}>{band.label}</span>
+    </>
+  );
 }
 
 export default function PlanetTable({ planets, page, itemsPerPage, onPageChange, onPlanetClick }: PlanetTableProps) {
@@ -65,6 +87,8 @@ export default function PlanetTable({ planets, page, itemsPerPage, onPageChange,
     return result;
   }, [planets, search, typeFilter, sortKey, sortOrder]);
 
+  const esiAriaSort = sortKey !== 'esi' ? 'none' : sortOrder === 'asc' ? 'ascending' : 'descending';
+
   const paginatedPlanets = filteredAndSorted.slice((page - 1) * itemsPerPage, page * itemsPerPage);
   const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
 
@@ -94,7 +118,7 @@ export default function PlanetTable({ planets, page, itemsPerPage, onPageChange,
         </select>
       </div>
 
-      <div className={styles.tableContainer}>
+      <div className={styles.tableContainer} role="region" aria-label="Exoplanet results" tabIndex={0}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -114,6 +138,14 @@ export default function PlanetTable({ planets, page, itemsPerPage, onPageChange,
               <th onClick={() => handleSort('disc_year')}>
                 Discovered {sortKey === 'disc_year' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
               </th>
+              <th className={styles.esiHeader} aria-sort={esiAriaSort}>
+                <span className={styles.esiHeaderContent}>
+                  <button className={styles.sortButton} onClick={() => handleSort('esi')}>
+                    ESI {sortKey === 'esi' && <span className={styles.sortIcon} aria-hidden="true">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
+                  </button>
+                  <ESIInfoButton />
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -125,6 +157,7 @@ export default function PlanetTable({ planets, page, itemsPerPage, onPageChange,
                 <td>{planet.pl_rade ? planet.pl_rade.toFixed(2) : 'N/A'}× Earth</td>
                 <td>{planet.sy_dist ? planet.sy_dist.toFixed(2) : 'N/A'} pc</td>
                 <td>{planet.disc_year || 'N/A'}</td>
+                <td className={styles.esiCell}><ESIScore score={planet.esi} /></td>
               </tr>
             ))}
           </tbody>
