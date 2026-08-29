@@ -1,18 +1,35 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { Planet } from '@/lib/mockPlanets';
+import { PlanetSummary } from '@/lib/mockPlanets';
 import styles from './PlanetTable.module.css';
 
 interface PlanetTableProps {
-  planets: Planet[];
+  planets: PlanetSummary[];
   page: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
-  onPlanetClick: (planet: Planet) => void;
+  onPlanetClick: (planet: PlanetSummary) => void;
 }
 
 type SortKey = 'pl_name' | 'sy_dist' | 'pl_rade' | 'discoverymethod' | 'disc_year';
 type SortOrder = 'asc' | 'desc';
+type SortValue = PlanetSummary[SortKey];
+
+// Unmeasured planets sort last in both directions: null coerces to 0 under <, which would
+// otherwise rank every planet NASA has no value for ahead of the real measurements.
+function compareSortValues(a: SortValue, b: SortValue, order: SortOrder): number {
+  if (a == null || b == null) return a == null && b == null ? 0 : a == null ? 1 : -1;
+
+  const direction = order === 'asc' ? 1 : -1;
+
+  if (typeof a === 'string' && typeof b === 'string') {
+    const left = a.toLowerCase();
+    const right = b.toLowerCase();
+    return left === right ? 0 : (left < right ? -1 : 1) * direction;
+  }
+
+  return (Number(a) - Number(b)) * direction;
+}
 
 export default function PlanetTable({ planets, page, itemsPerPage, onPageChange, onPlanetClick }: PlanetTableProps) {
   const [search, setSearch] = useState('');
@@ -43,17 +60,7 @@ export default function PlanetTable({ planets, page, itemsPerPage, onPageChange,
       result = result.filter(p => p.discoverymethod === typeFilter);
     }
 
-    result.sort((a, b) => {
-      let aVal = a[sortKey];
-      let bVal = b[sortKey];
-      
-      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-      
-      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
+    result.sort((a, b) => compareSortValues(a[sortKey], b[sortKey], sortOrder));
 
     return result;
   }, [planets, search, typeFilter, sortKey, sortOrder]);
@@ -61,7 +68,8 @@ export default function PlanetTable({ planets, page, itemsPerPage, onPageChange,
   const paginatedPlanets = filteredAndSorted.slice((page - 1) * itemsPerPage, page * itemsPerPage);
   const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
 
-  const types = ['all', ...Array.from(new Set(planets.map(p => p.discoverymethod).filter(Boolean)))];
+  const methods = planets.map(p => p.discoverymethod).filter((m): m is string => Boolean(m));
+  const types = ['all', ...Array.from(new Set(methods))];
 
   return (
     <>

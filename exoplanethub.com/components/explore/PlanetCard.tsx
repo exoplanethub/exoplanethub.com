@@ -1,9 +1,9 @@
 'use client';
-import { Planet } from '@/lib/mockPlanets';
+import { PlanetSummary } from '@/lib/mockPlanets';
 import styles from './PlanetCard.module.css';
 
 interface PlanetCardProps {
-  planet: Planet;
+  planet: PlanetSummary;
   onClick: () => void;
 }
 

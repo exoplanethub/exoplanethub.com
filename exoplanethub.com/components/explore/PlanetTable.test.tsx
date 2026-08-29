@@ -91,6 +91,17 @@ describe('PlanetTable rendering', () => {
     expect(cells[3]).toHaveTextContent('N/A× Earth');
     expect(cells[4]).toHaveTextContent('N/A pc');
   });
+
+  // NASA omits pl_eqt on 72% of rows and pl_rade on 25%; the sync stores those as null.
+  it('falls back to N/A for the nulls the archive actually sends', () => {
+    renderTable({ planets: [makePlanet({ pl_name: 'Null b', hostname: null, pl_rade: null, sy_dist: null, discoverymethod: null })] });
+
+    const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
+    expect(cells[1]).toHaveTextContent('N/A');
+    expect(cells[2]).toHaveTextContent('N/A');
+    expect(cells[3]).toHaveTextContent('N/A× Earth');
+    expect(cells[4]).toHaveTextContent('N/A pc');
+  });
 });
 
 describe('PlanetTable sorting', () => {
@@ -117,6 +128,23 @@ describe('PlanetTable sorting', () => {
     await user.click(sortControl(/planet/i));
 
     expect(renderedNames()).toEqual(['Alpha b', 'Beta c', 'Gamma d']);
+  });
+
+  it('sorts planets with no measurement last in both directions', async () => {
+    const user = userEvent.setup();
+    renderTable({
+      planets: [
+        makePlanet({ pl_name: 'Unmeasured', pl_rade: null }),
+        makePlanet({ pl_name: 'Small', pl_rade: 1 }),
+        makePlanet({ pl_name: 'Large', pl_rade: 9 }),
+      ],
+    });
+
+    await user.click(sortControl(/radius/i));
+    expect(renderedNames()).toEqual(['Large', 'Small', 'Unmeasured']);
+
+    await user.click(sortControl(/radius/i));
+    expect(renderedNames()).toEqual(['Small', 'Large', 'Unmeasured']);
   });
 
   it('sorts numerically rather than lexicographically', async () => {
