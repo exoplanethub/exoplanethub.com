@@ -3,6 +3,9 @@
 !.env.example
 **/samconfig.toml
 
+# SAM build artifacts
+aws-backend/.aws-sam/
+
 # IDE
 .vscode/
 .idea/
