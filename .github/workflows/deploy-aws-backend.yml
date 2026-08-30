@@ -31,12 +31,32 @@ jobs:
       - name: Determine environment
         id: env
         run: |
-          if [[ ${{ github.ref }} == refs/tags/dev-aws-backend-* ]]; then
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          else
-            echo "environment=main" >> $GITHUB_OUTPUT
+          case "$GITHUB_REF_NAME" in
+            dev-aws-backend-*)  echo "environment=dev"  >> $GITHUB_OUTPUT ;;
+            main-aws-backend-*) echo "environment=main" >> $GITHUB_OUTPUT ;;
+            *) echo "::error::Unrecognised tag prefix: $GITHUB_REF_NAME"; exit 1 ;;
+          esac
+
+      # `git tag` against a stale HEAD -- e.g. after a `git pull` that aborted on a
+      # dirty working tree -- produces a tag on a real but outdated commit. Ancestry
+      # is not enough to catch that: the stale commit is still on the branch. Compare
+      # against the branch tip instead.
+      #
+      # A deliberate rollback to an older commit will trip this and should be deployed
+      # manually with `sam deploy`. If the branch advances between tagging and this run,
+      # re-tag on the new tip.
+      - name: Verify tag is on its environment's branch tip
+        env:
+          BRANCH: ${{ steps.env.outputs.environment }}
+        run: |
+          git fetch --no-tags origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
+          tip=$(git rev-parse "refs/remotes/origin/$BRANCH")
+          if [ "$GITHUB_SHA" != "$tip" ]; then
+            echo "::error::$GITHUB_REF_NAME points at $GITHUB_SHA, but $BRANCH is at $tip. Refusing to deploy a stale commit."
+            exit 1
           fi
-      
+          echo "$GITHUB_REF_NAME is at the tip of $BRANCH ($GITHUB_SHA)"
+
       - name: SAM build and deploy
         working-directory: ./aws-backend
         run: |

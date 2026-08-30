@@ -6,6 +6,9 @@
 # SAM build artifacts
 aws-backend/.aws-sam/
 
+# Vercel CLI link state (machine-local; `vercel pull` also writes secrets here)
+.vercel
+
 # IDE
 .vscode/
 .idea/
