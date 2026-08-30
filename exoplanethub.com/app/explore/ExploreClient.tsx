@@ -23,12 +23,14 @@ export default function ExploreClient({ planets }: { planets: PlanetSummary[] })
           <button 
             className={`${styles.toggleBtn} ${view === 'grid' ? styles.active : ''}`}
             onClick={() => setView('grid')}
+            aria-pressed={view === 'grid'}
           >
             Grid
           </button>
           <button 
             className={`${styles.toggleBtn} ${view === 'table' ? styles.active : ''}`}
             onClick={() => setView('table')}
+            aria-pressed={view === 'table'}
           >
             Table
           </button>
