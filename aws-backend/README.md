@@ -1,5 +1,13 @@
 # AWS Backend
 
+## Data Sync
+
+The sync Lambda upserts every record the NASA archive returns, then deletes stored records the
+archive no longer lists, so the table cannot drift above the archive's count. The sweep refuses to
+delete more than 5% of the table in one run — a truncated fetch aborts it with an error log rather
+than emptying the table, and the upserts still stand. The invocation result reports `total_synced`,
+`total_removed` and `sweep_aborted`; every removed `pl_name` is logged individually.
+
 ## Local Deployment
 
 ```bash

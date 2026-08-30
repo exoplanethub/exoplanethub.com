@@ -1,10 +1,14 @@
 import json
+import logging
 import os
 import urllib.request
 import boto3
 from decimal import Decimal
 from datetime import datetime
 from esi import compute_esi
+from sweep import sweep_removed
+
+logging.getLogger().setLevel(logging.INFO)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['TABLE_NAME'])
@@ -16,7 +20,8 @@ def lambda_handler(event, context):
         data = json.loads(response.read())
     
     timestamp = datetime.utcnow().isoformat()
-    
+    archive_names = {planet['pl_name'] for planet in data}
+
     with table.batch_writer() as batch:
         for planet in data:
             item = {
@@ -48,11 +53,15 @@ def lambda_handler(event, context):
                 item['esi'] = score
 
             batch.put_item(Item=item)
-    
+
+    sweep = sweep_removed(table, archive_names)
+
     return {
         'statusCode': 200,
         'body': json.dumps({
-            'total_synced': len(data)
+            'total_synced': len(data),
+            'total_removed': len(sweep.deleted),
+            'sweep_aborted': sweep.aborted
         })
     }
 
