@@ -12,7 +12,7 @@ that view to anyone. This is a build, not an enhancement (#14).
 
 ## Goals
 - Filter the explore list by name/host search, radius, mass, orbital period, discovery method(s), and star type.
-- Every control's state lives in the URL — shareable, bookmarkable, reload-safe.
+- Every control's state — filters *and* table sort — lives in the URL: shareable, bookmarkable, reload-safe.
 - One module owns filter semantics; grid and table views always show the same filtered set.
 - Controls are keyboard- and screen-reader-accessible, with a live results count.
 
@@ -27,10 +27,12 @@ that view to anyone. This is a build, not an enhancement (#14).
 - [ ] Radius, mass, and orbital period each have a min/max range control on a log scale, reflected in the URL; a planet lacking that measurement is excluded **only while that filter is active**, and the UI says so (e.g. "planets without a measured mass are hidden").
 - [ ] Discovery method is a multi-select whose options are the distinct values present in the data, reflected as `?method=` (comma-separated).
 - [ ] Star type filter offers O/B/A/F/G/K/M classes with plain-language labels ("M — red dwarf"), reflected as `?star=`.
-- [ ] "Clear all" resets every filter and the URL; the results count ("N of 6,023 planets") updates in an `aria-live=polite` region.
+- [ ] Table sort key/direction is reflected as `?sort=` (e.g. `?sort=pl_rade.asc`); the default (`disc_year.desc`) is omitted from the URL; a shared URL reproduces both the filtered set and its ordering.
+- [ ] "Clear all" resets every filter and the URL; the results count ("N of M planets", M computed from the fetched list — never a hardcoded total) updates in an `aria-live=polite` region.
 - [ ] Malformed or unknown URL params are silently ignored — the page never shows an error state because of a bad query string.
 - [ ] Changing any filter clamps/resets pagination; no empty page-37-of-2 states.
-- [ ] `lib/planetFilters.ts` is pure and unit-tested: URL codec round-trips, null-value semantics, and teff→class banding (band edges exactly as tabulated in Technical Approach, including boundary values and the sub-2,400 K/unclassified case).
+- [ ] `lib/planetFilters.ts` is pure and unit-tested: URL codec round-trips, null-value semantics, and teff→class banding (band edges exactly as tabulated in Technical Approach, including boundary values and the sub-2,300 K/unclassified case).
+- [ ] `applyFilters` over the full list is memoised in `ExploreClient` (`useMemo` on planets + filter state) — `PlanetTable` already memoises today, and the hoist must not silently drop that.
 - [ ] `/api/planets` projection includes `pl_orbper` and `st_teff`; `route.test.ts` updated accordingly.
 - [ ] All range/select controls are native HTML inputs or have full keyboard operation with visible focus; labels associated via `<label>`/`aria-labelledby`.
 
@@ -54,16 +56,26 @@ state and becomes a dumb renderer of the filtered list. This fixes the current g
 inconsistency and keeps the URL schema encapsulated in one file.
 Alternative: the `nuqs` library — solid, but a dependency for one page when the custom hook is
 ~40 lines; rejected. Revisit if URL state spreads to other pages.
+`planetFilters.ts` holds the codec, the predicate engine, and the band table — fine at this
+size; if it passes ~200 lines, split the band table into its own file (`esiBands.ts` is the
+precedent).
 
 **URL schema** (public contract, so pinned here): `q` (string), `radius`, `mass`, `period` as
 `min..max` with either end omissible (`radius=0.5..2`, `period=..365`), `method` and `star`
-comma-separated. Values are real units (Earth radii/masses, days), not slider positions —
-URLs stay human-readable. Absent/malformed → filter inactive, never an error.
+comma-separated, `sort` as `key.dir` (`sort=pl_rade.asc`; default `disc_year.desc` omitted).
+Values are real units (Earth radii/masses, days), not slider positions — URLs stay
+human-readable. Absent/malformed → filter inactive / default sort, never an error.
+Sort stays a table-view concern (`sortKey`/`sortOrder` already exist in `PlanetTable` state);
+only its persistence moves to the URL via the same codec. Alternative: leave sort out of scope —
+rejected because a shared URL that reproduces the filters but not the ordering shows the
+recipient a different first page, which is the Problem Statement's own complaint half-fixed.
 
 **Range controls — paired min/max number inputs as the primary mechanism, with a log-scale
 dual-thumb track built from two overlaid native `<input type="range">` as enhancement.**
-These quantities span 4–6 orders of magnitude (period: 0.09 to ~10⁵ days), so linear sliders
-are useless; the slider maps position↔value through log10. Native inputs keep keyboard and
+These quantities span up to ~8 orders of magnitude (period: ~0.09 to ~8×10⁶ days in the current
+dataset), so linear sliders are useless; the slider maps position↔value through log10, and the
+track bounds are derived from the fetched data's actual min/max — never hardcoded, or the
+longest-period planets fall off the end of the track. Native inputs keep keyboard and
 screen-reader behaviour for free. Alternative: a custom ARIA slider widget — rejected; hand-rolled
 ARIA sliders are where a11y bugs live, and number inputs already give precise entry.
 
@@ -74,33 +86,38 @@ Temperature bands are deterministic, already per-planet, and the band table sits
 other filter logic. Decided in #14 (2026-08-30): Zack deferred to team consensus, and both the
 architect and PM back temperature bands — no `st_spectype` column, no sync migration.
 
-Cut points (pinned here so they aren't an implementation-time judgment call; standard
-main-sequence boundaries per the Pecaut & Mamajek 2013 calibration, as commonly tabulated).
-Intervals are half-open, lower bound inclusive, in K:
+Cut points (pinned here so they aren't an implementation-time judgment call): class edges from
+the Pecaut & Mamajek 2013 dwarf calibration (Mamajek's maintained "Modern Mean Dwarf Stellar
+Color and Effective Temperature Sequence"). Alternative: the traditional Harvard/MK edges
+(30,000/10,000/7,500/6,000/5,200/3,700/2,400) — rejected because they disagree with the modern
+calibration at five of seven edges, and at K/M specifically they mislabel ~146 planets in the
+current dataset (hosts in 3,700–3,900 K, M dwarfs per P&M) as "K — orange dwarf" on this spec's
+own flagship "red dwarf" filter. Intervals are half-open, lower bound inclusive, in K:
 
 | Class | `st_teff` range   | Label            |
 |-------|-------------------|------------------|
-| O     | ≥ 30,000          | O — blue giant   |
-| B     | 10,000 – 30,000   | B — blue-white   |
-| A     | 7,500 – 10,000    | A — white        |
-| F     | 6,000 – 7,500     | F — yellow-white |
-| G     | 5,200 – 6,000     | G — sun-like     |
-| K     | 3,700 – 5,200     | K — orange dwarf |
-| M     | 2,400 – 3,700     | M — red dwarf    |
+| O     | ≥ 33,000          | O — blue giant   |
+| B     | 10,000 – 33,000   | B — blue-white   |
+| A     | 7,300 – 10,000    | A — white        |
+| F     | 6,000 – 7,300     | F — yellow-white |
+| G     | 5,300 – 6,000     | G — sun-like     |
+| K     | 3,900 – 5,300     | K — orange dwarf |
+| M     | 2,300 – 3,900     | M — red dwarf    |
 
-A star below 2,400 K (brown-dwarf hosts, e.g. L/T types) or with no `st_teff` is *unclassified*
+A star below 2,300 K (brown-dwarf hosts, e.g. L/T types) or with no `st_teff` is *unclassified*
 and follows the same rule as any missing measurement: hidden only while the star filter is
 active, and the UI says so. (Extending M downward instead was rejected — labelling a brown
 dwarf "red dwarf" is exactly the kind of quiet wrongness a curious visitor would catch.)
 
-**Constraints/risks:** `useSearchParams` requires a Suspense boundary in App Router — the explore
-page is already fully client-rendered, but the builder should verify no static-render warning.
+**Constraints/risks:** Verified on Next 16.3.3 (review of this spec): `useSearchParams` in
+`ExploreClient` needs no Suspense boundary — `/explore` stays statically prerendered
+(`○ (Static)` in `next build`) and reads params correctly after hydration.
 Payload grows two numeric fields (~10%); harmless under the existing CDN caching. #6 should merge
 before tasks 2–4 so new controls land on an already-keyboard-sound page.
 
 ## Task Breakdown
 Order matches the shape approved in #14; each later task is a thin addition once task 1 exists.
-1. Filter foundation: `lib/planetFilters.ts` + `useFilterParams`; hoist existing search box and method select out of `PlanetTable` into `ExploreClient`, wire search to `?q=`, filter both views, clamp pagination (size: M)
+1. Filter foundation: `lib/planetFilters.ts` + `useFilterParams`; hoist existing search box and method select out of `PlanetTable` into `ExploreClient`, wire search to `?q=` and table sort to `?sort=`, filter both views, clamp pagination (size: M)
 2. Range filters for radius, mass, orbital period; add `pl_orbper` to `PLANET_SUMMARY_FIELDS`; log-scale control + number inputs (size: L)
 3. Upgrade discovery method to multi-select with `?method=` (size: S)
 4. Star type filter (`st_teff` into fields, teff→class bands) + "clear all" + live results count (size: M)
