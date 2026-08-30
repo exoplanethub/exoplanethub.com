@@ -1,0 +1,35 @@
+/* Absolute so a card without a score reserves no space and its layout is untouched. */
+.badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  max-width: calc(100% - 32px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 2px 10px rgba(2, 8, 38, 0.35);
+  transition: transform 0.2s;
+}
+
+.badge:hover {
+  transform: scale(1.04);
+}
+
+.score {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.band {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}

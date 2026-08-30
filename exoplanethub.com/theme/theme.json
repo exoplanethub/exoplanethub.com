@@ -24,7 +24,15 @@
         "chart3": "#7FB3FF",
         "chart4": "#FFB454",
         "chart5": "#B07CFF",
-        "focusRing": "rgba(225,184,100,0.55)"
+        "focusRing": "rgba(225,184,100,0.55)",
+        "esiBand1": "#7BE8AC",
+        "esiBand1Text": "#0B1020",
+        "esiBand2": "#2FA47C",
+        "esiBand2Text": "#0B1020",
+        "esiBand3": "#1E6E86",
+        "esiBand3Text": "#E9EDF8",
+        "esiBand4": "#2E3550",
+        "esiBand4Text": "#E9EDF8"
       },
       "typography": {
         "fontFamily": {
@@ -91,7 +99,15 @@
         "chart3": "#67E5D5",
         "chart4": "#FFC46B",
         "chart5": "#FF8BD5",
-        "focusRing": "rgba(143,211,255,0.55)"
+        "focusRing": "rgba(143,211,255,0.55)",
+        "esiBand1": "#6FE0B0",
+        "esiBand1Text": "#080A17",
+        "esiBand2": "#34A48C",
+        "esiBand2Text": "#080A17",
+        "esiBand3": "#2668A0",
+        "esiBand3Text": "#E7EBFF",
+        "esiBand4": "#333A63",
+        "esiBand4Text": "#E7EBFF"
       },
       "typography": {
         "fontFamily": {
@@ -142,7 +158,15 @@
         "chart3": "#7C3AED",
         "chart4": "#F59E0B",
         "chart5": "#EF4444",
-        "focusRing": "rgba(36,89,245,0.45)"
+        "focusRing": "rgba(36,89,245,0.45)",
+        "esiBand1": "#04422E",
+        "esiBand1Text": "#FFFFFF",
+        "esiBand2": "#1D7B57",
+        "esiBand2Text": "#FFFFFF",
+        "esiBand3": "#79B4D2",
+        "esiBand3Text": "#0F172A",
+        "esiBand4": "#D3D9E6",
+        "esiBand4Text": "#0F172A"
       },
       "typography": {
         "fontFamily": {

@@ -25,36 +25,6 @@
   opacity: 0.6;
 }
 
-.score {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 18px;
-  border: 3px solid var(--color-surface);
-}
-
-.scoreHigh {
-  background: var(--color-accent);
-  color: var(--color-background);
-}
-
-.scoreMedium {
-  background: var(--color-primary);
-  color: var(--color-primary-contrast);
-}
-
-.scoreLow {
-  background: var(--color-text-muted);
-  color: var(--color-background);
-}
-
 .content {
   padding: 20px;
 }

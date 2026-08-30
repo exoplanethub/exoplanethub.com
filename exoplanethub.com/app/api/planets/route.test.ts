@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { PLANET_SUMMARY_FIELDS } from '@/lib/mockPlanets';
 
 const { send } = vi.hoisted(() => ({ send: vi.fn() }));
 
@@ -25,6 +26,12 @@ async function importRouteWithCurrentEnv() {
 
 function scanInputs() {
   return send.mock.calls.map(([command]) => command.input as Record<string, unknown>);
+}
+
+// Resolves the '#alias, #alias' projection back to the attribute names DynamoDB will actually return.
+function projectedFields(input: Record<string, unknown>) {
+  const names = input.ExpressionAttributeNames as Record<string, string>;
+  return (input.ProjectionExpression as string).split(', ').map((alias) => names[alias]);
 }
 
 beforeEach(() => {
@@ -70,6 +77,48 @@ describe('GET /api/planets', () => {
   });
 });
 
+describe('GET /api/planets projection', () => {
+  it('projects esi so the badge has a score to render', async () => {
+    send.mockResolvedValue({ Items: [] });
+    const GET = await importRouteWithCurrentEnv();
+
+    await GET();
+
+    expect(projectedFields(scanInputs()[0])).toContain('esi');
+  });
+
+  it('projects exactly the shared summary field list', async () => {
+    send.mockResolvedValue({ Items: [] });
+    const GET = await importRouteWithCurrentEnv();
+
+    await GET();
+
+    expect(projectedFields(scanInputs()[0])).toEqual([...PLANET_SUMMARY_FIELDS]);
+  });
+
+  it('projects every page, not just the first', async () => {
+    send
+      .mockResolvedValueOnce({ Items: [KEPLER], LastEvaluatedKey: { pl_name: 'Kepler-22 b' } })
+      .mockResolvedValueOnce({ Items: [TRAPPIST] });
+    const GET = await importRouteWithCurrentEnv();
+
+    await GET();
+
+    expect(projectedFields(scanInputs()[1])).toEqual([...PLANET_SUMMARY_FIELDS]);
+  });
+
+  it('lets the CDN serve the scan for an hour and refresh it in the background', async () => {
+    send.mockResolvedValue({ Items: [] });
+    const GET = await importRouteWithCurrentEnv();
+
+    const response = await GET();
+
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, s-maxage=3600, stale-while-revalidate=21600'
+    );
+  });
+});
+
 describe('GET /api/planets failure handling', () => {
   let consoleError: ReturnType<typeof vi.spyOn>;
 
@@ -93,8 +142,7 @@ describe('GET /api/planets failure handling', () => {
 });
 
 describe('GET /api/planets pagination (#5)', () => {
-  // Encodes the open bug: it.fails turns red the moment the route follows LastEvaluatedKey, forcing this marker out.
-  it.fails('follows LastEvaluatedKey until the scan is exhausted', async () => {
+  it('follows LastEvaluatedKey until the scan is exhausted', async () => {
     send
       .mockResolvedValueOnce({ Items: [KEPLER], LastEvaluatedKey: { pl_name: 'Kepler-22 b' } })
       .mockResolvedValueOnce({ Items: [TRAPPIST] });
