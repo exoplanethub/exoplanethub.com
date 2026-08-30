@@ -30,7 +30,7 @@ that view to anyone. This is a build, not an enhancement (#14).
 - [ ] "Clear all" resets every filter and the URL; the results count ("N of 6,023 planets") updates in an `aria-live=polite` region.
 - [ ] Malformed or unknown URL params are silently ignored — the page never shows an error state because of a bad query string.
 - [ ] Changing any filter clamps/resets pagination; no empty page-37-of-2 states.
-- [ ] `lib/planetFilters.ts` is pure and unit-tested: URL codec round-trips, null-value semantics, and teff→class banding.
+- [ ] `lib/planetFilters.ts` is pure and unit-tested: URL codec round-trips, null-value semantics, and teff→class banding (band edges exactly as tabulated in Technical Approach, including boundary values and the sub-2,400 K/unclassified case).
 - [ ] `/api/planets` projection includes `pl_orbper` and `st_teff`; `route.test.ts` updated accordingly.
 - [ ] All range/select controls are native HTML inputs or have full keyboard operation with visible focus; labels associated via `<label>`/`aria-labelledby`.
 
@@ -73,6 +73,25 @@ resync, and the column is messy free text ("G2 V", "sdB", many nulls) that needs
 Temperature bands are deterministic, already per-planet, and the band table sits next to the
 other filter logic. Open question below.
 
+Cut points (pinned here so they aren't an implementation-time judgment call; standard
+main-sequence boundaries per the Pecaut & Mamajek 2013 calibration, as commonly tabulated).
+Intervals are half-open, lower bound inclusive, in K:
+
+| Class | `st_teff` range   | Label            |
+|-------|-------------------|------------------|
+| O     | ≥ 30,000          | O — blue giant   |
+| B     | 10,000 – 30,000   | B — blue-white   |
+| A     | 7,500 – 10,000    | A — white        |
+| F     | 6,000 – 7,500     | F — yellow-white |
+| G     | 5,200 – 6,000     | G — sun-like     |
+| K     | 3,700 – 5,200     | K — orange dwarf |
+| M     | 2,400 – 3,700     | M — red dwarf    |
+
+A star below 2,400 K (brown-dwarf hosts, e.g. L/T types) or with no `st_teff` is *unclassified*
+and follows the same rule as any missing measurement: hidden only while the star filter is
+active, and the UI says so. (Extending M downward instead was rejected — labelling a brown
+dwarf "red dwarf" is exactly the kind of quiet wrongness a curious visitor would catch.)
+
 **Constraints/risks:** `useSearchParams` requires a Suspense boundary in App Router — the explore
 page is already fully client-rendered, but the builder should verify no static-render warning.
 Payload grows two numeric fields (~10%); harmless under the existing CDN caching. #6 should merge
@@ -86,4 +105,4 @@ Order matches the shape approved in #14; each later task is a thin addition once
 4. Star type filter (`st_teff` into fields, teff→class bands) + "clear all" + live results count (size: M)
 
 ## Open Questions
-- Q: Star-type filter — OK to derive O/B/A/F/G/K/M from stellar temperature (`st_teff`, already synced) rather than adding NASA's free-text spectral-type column to the backend sync? Friendly labels either way ("M — red dwarf"); trade-off is that a few edge-case stars will classify slightly differently than their catalogued spectral type, in exchange for zero backend changes and no string parsing.
+- Q: Star-type filter — OK to derive O/B/A/F/G/K/M from stellar temperature (`st_teff`, already synced) rather than adding NASA's free-text spectral-type column to the backend sync? Friendly labels either way ("M — red dwarf"); trade-off is that a few edge-case stars will classify slightly differently than their catalogued spectral type, in exchange for zero backend changes and no string parsing. (PM seconds temperature bands; the exact cut points are now pinned in Technical Approach so this is fully concrete either way.)
