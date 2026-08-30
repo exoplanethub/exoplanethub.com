@@ -12,12 +12,13 @@ that view to anyone. This is a build, not an enhancement (#14).
 
 ## Goals
 - Filter the explore list by name/host search, radius, mass, orbital period, discovery method(s), and star type.
-- Every control's state — filters *and* table sort — lives in the URL: shareable, bookmarkable, reload-safe.
+- Filter and sort state lives in the URL: shareable, bookmarkable, reload-safe.
 - One module owns filter semantics; grid and table views always show the same filtered set.
 - Controls are keyboard- and screen-reader-accessible, with a live results count.
 
 ## Out of Scope
 - localStorage persistence — the URL is the single share primitive (per #14 discussion).
+- The grid/table `view` toggle stays component-local and out of the URL — it's a presentation preference, not part of the selection; a shared URL reproduces *what* is shown, not *how*.
 - Server-side filtering or API query params (see Technical Approach).
 - Comparison tool, saved searches, 3D visualisation — downstream, part of the #36 direction discussion.
 - Fixing #6 (keyboard access to table rows/sort headers) — separate task issue; should land before this epic's UI tasks.
@@ -27,7 +28,7 @@ that view to anyone. This is a build, not an enhancement (#14).
 - [ ] Radius, mass, and orbital period each have a min/max range control on a log scale, reflected in the URL; a planet lacking that measurement is excluded **only while that filter is active**, and the UI says so (e.g. "planets without a measured mass are hidden").
 - [ ] Discovery method is a multi-select whose options are the distinct values present in the data, reflected as `?method=` (comma-separated).
 - [ ] Star type filter offers O/B/A/F/G/K/M classes with plain-language labels ("M — red dwarf"), reflected as `?star=`.
-- [ ] Table sort key/direction is reflected as `?sort=` (e.g. `?sort=pl_rade.asc`); the default (`disc_year.desc`) is omitted from the URL; a shared URL reproduces both the filtered set and its ordering.
+- [ ] Table sort key/direction is reflected as `?sort=` (e.g. `?sort=pl_rade.asc`); the default (`disc_year.desc`) is omitted from the URL; a shared URL reproduces both the filtered set and its ordering, and Back/Forward keeps the header ▲/▼ indicators in sync with the actual order.
 - [ ] "Clear all" resets every filter and the URL; the results count ("N of M planets", M computed from the fetched list — never a hardcoded total) updates in an `aria-live=polite` region.
 - [ ] Malformed or unknown URL params are silently ignored — the page never shows an error state because of a bad query string.
 - [ ] Changing any filter clamps/resets pagination; no empty page-37-of-2 states.
@@ -65,10 +66,17 @@ precedent).
 comma-separated, `sort` as `key.dir` (`sort=pl_rade.asc`; default `disc_year.desc` omitted).
 Values are real units (Earth radii/masses, days), not slider positions — URLs stay
 human-readable. Absent/malformed → filter inactive / default sort, never an error.
-Sort stays a table-view concern (`sortKey`/`sortOrder` already exist in `PlanetTable` state);
-only its persistence moves to the URL via the same codec. Alternative: leave sort out of scope —
-rejected because a shared URL that reproduces the filters but not the ordering shows the
-recipient a different first page, which is the Problem Statement's own complaint half-fixed.
+Sort lives in `FilterState`: `sortKey`/`sortOrder` move out of `PlanetTable`'s local state into
+the single `useFilterParams()` in `ExploreClient`, which passes `sortKey`/`sortOrder`/`onSort`
+to `PlanetTable` as props (the comparator still runs inside the table). One hook instance means
+one debounced `router.replace` writer for the whole query string, and Back/Forward can't desync
+the ▲/▼ indicator from the actual ordering. Alternative: keep sort in table state and persist
+only its URL slice from there — rejected: two hook instances are two debounced writers racing on
+the same URL (a pending `?q=` write and a sort click each serialize a snapshot missing the
+other's slice; last write wins and drops one), and Back changes the URL without changing the
+table's state. Alternative: leave sort out of the URL entirely — rejected because a shared URL
+that reproduces the filters but not the ordering shows the recipient a different first page,
+the Problem Statement's own complaint half-fixed.
 
 **Range controls — paired min/max number inputs as the primary mechanism, with a log-scale
 dual-thumb track built from two overlaid native `<input type="range">` as enhancement.**
@@ -90,7 +98,7 @@ Cut points (pinned here so they aren't an implementation-time judgment call): cl
 the Pecaut & Mamajek 2013 dwarf calibration (Mamajek's maintained "Modern Mean Dwarf Stellar
 Color and Effective Temperature Sequence"). Alternative: the traditional Harvard/MK edges
 (30,000/10,000/7,500/6,000/5,200/3,700/2,400) — rejected because they disagree with the modern
-calibration at five of seven edges, and at K/M specifically they mislabel ~146 planets in the
+calibration at five of seven edges, and at K/M specifically they mislabel ~150 planets in the
 current dataset (hosts in 3,700–3,900 K, M dwarfs per P&M) as "K — orange dwarf" on this spec's
 own flagship "red dwarf" filter. Intervals are half-open, lower bound inclusive, in K:
 
@@ -117,7 +125,7 @@ before tasks 2–4 so new controls land on an already-keyboard-sound page.
 
 ## Task Breakdown
 Order matches the shape approved in #14; each later task is a thin addition once task 1 exists.
-1. Filter foundation: `lib/planetFilters.ts` + `useFilterParams`; hoist existing search box and method select out of `PlanetTable` into `ExploreClient`, wire search to `?q=` and table sort to `?sort=`, filter both views, clamp pagination (size: M)
+1. Filter foundation: `lib/planetFilters.ts` + `useFilterParams`; hoist search box, method select, *and sort state* out of `PlanetTable` into `ExploreClient` (sort passed back to the table as `sortKey`/`sortOrder`/`onSort` props), wire `?q=` and `?sort=`, filter both views, clamp pagination (size: M)
 2. Range filters for radius, mass, orbital period; add `pl_orbper` to `PLANET_SUMMARY_FIELDS`; log-scale control + number inputs (size: L)
 3. Upgrade discovery method to multi-select with `?method=` (size: S)
 4. Star type filter (`st_teff` into fields, teff→class bands) + "clear all" + live results count (size: M)
