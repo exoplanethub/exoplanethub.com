@@ -8,7 +8,7 @@ from datetime import datetime
 from esi import compute_esi
 from sweep import sweep_removed
 
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger('sweep').setLevel(logging.INFO)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['TABLE_NAME'])
@@ -60,7 +60,7 @@ def lambda_handler(event, context):
         'statusCode': 200,
         'body': json.dumps({
             'total_synced': len(data),
-            'total_removed': len(sweep.deleted),
+            'removals_submitted': len(sweep.submitted),
             'sweep_aborted': sweep.aborted
         })
     }

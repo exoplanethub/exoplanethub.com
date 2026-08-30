@@ -3,10 +3,14 @@
 ## Data Sync
 
 The sync Lambda upserts every record the NASA archive returns, then deletes stored records the
-archive no longer lists, so the table cannot drift above the archive's count. The sweep refuses to
-delete more than 5% of the table in one run — a truncated fetch aborts it with an error log rather
-than emptying the table, and the upserts still stand. The invocation result reports `total_synced`,
-`total_removed` and `sweep_aborted`; every removed `pl_name` is logged individually.
+archive no longer lists, so the table converges to the archive's count unless the guard trips. The
+sweep refuses to delete more than 5% of the table in one run — a truncated fetch aborts it with an
+error log and leaves the drift in place rather than emptying the table, and the upserts still stand.
+
+The invocation result reports `total_synced`, `removals_submitted` and `sweep_aborted`; every
+removed `pl_name` is logged individually. `removals_submitted` counts what was handed to DynamoDB:
+exact when `sweep_aborted` is false, an upper bound when it is true, because a batch can commit and
+still fail. A run that aborts mid-sweep is safe to retry — deletions are idempotent.
 
 ## Local Deployment
 

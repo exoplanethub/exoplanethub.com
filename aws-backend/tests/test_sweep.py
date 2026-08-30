@@ -7,14 +7,52 @@ from sweep import MAXIMUM_DELETION_FRACTION, sweep_removed
 # Wide enough that a couple of stale records stay under the deletion ceiling.
 ARCHIVE = {'Kepler-22 b', 'TRAPPIST-1e', 'Proxima Cen b'} | {f'Filler {index}' for index in range(97)}
 
+FLUSH_SIZE = 25  # boto3 BatchWriter's default flush_amount
+
+# 60 stale records span three flushes and stay under 5% of the 1260 stored.
+SPANNING_STALE = {f'Retracted {index}' for index in range(60)}
+SPANNING_SURVIVORS = {f'Planet {index}' for index in range(1200)}
+
+
+# Mirrors boto3's BatchWriter: buffer, flush every 25, and flush the remainder on exit.
+class FakeBatchWriter:
+    def __init__(self, table):
+        self.table = table
+        self.buffer = []
+
+    def delete_item(self, Key):
+        self.table.handed.append(Key['pl_name'])
+        self.buffer.append(Key['pl_name'])
+        if len(self.buffer) >= FLUSH_SIZE:
+            self._flush()
+
+    def _flush(self):
+        sending, self.buffer = self.buffer[:FLUSH_SIZE], self.buffer[FLUSH_SIZE:]
+        self.table.flushes += 1
+        failing = self.table.flushes == self.table.failing_flush
+        if not failing or self.table.failing_flush_commits:
+            self.table.committed.extend(sending)
+        if failing:
+            raise RuntimeError('throttled')
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exception):
+        while self.buffer:
+            self._flush()
+
 
 class FakeTable:
-    def __init__(self, stored_names, page_size=1000, scan_error=None, delete_error=None):
+    def __init__(self, stored_names, page_size=1000, scan_error=None, failing_flush=None, failing_flush_commits=False):
         self.stored_names = list(stored_names)
         self.page_size = page_size
         self.scan_error = scan_error
-        self.delete_error = delete_error
-        self.deleted = []
+        self.failing_flush = failing_flush
+        self.failing_flush_commits = failing_flush_commits
+        self.committed = []
+        self.handed = []
+        self.flushes = 0
         self.scan_requests = []
 
     def scan(self, **request):
@@ -29,18 +67,7 @@ class FakeTable:
         return response
 
     def batch_writer(self):
-        return self
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exception):
-        return False
-
-    def delete_item(self, Key):
-        if self.delete_error:
-            raise self.delete_error
-        self.deleted.append(Key['pl_name'])
+        return FakeBatchWriter(self)
 
 
 def test_deletes_only_records_absent_from_the_archive():
@@ -48,8 +75,8 @@ def test_deletes_only_records_absent_from_the_archive():
 
     result = sweep_removed(table, ARCHIVE)
 
-    assert set(result.deleted) == {'Retracted b', 'Renamed c'}
-    assert sorted(table.deleted) == ['Renamed c', 'Retracted b']
+    assert set(result.submitted) == {'Retracted b', 'Renamed c'}
+    assert sorted(table.committed) == ['Renamed c', 'Retracted b']
     assert result.aborted is False
 
 
@@ -58,8 +85,8 @@ def test_deletes_nothing_when_the_table_matches_the_archive():
 
     result = sweep_removed(table, ARCHIVE)
 
-    assert result.deleted == ()
-    assert table.deleted == []
+    assert result.submitted == ()
+    assert table.committed == []
     assert result.aborted is False
 
 
@@ -68,7 +95,7 @@ def test_ignores_archive_records_the_table_has_not_stored_yet():
 
     result = sweep_removed(table, ARCHIVE)
 
-    assert result.deleted == ()
+    assert result.submitted == ()
     assert result.aborted is False
 
 
@@ -78,9 +105,42 @@ def test_scan_pages_until_the_table_is_exhausted():
 
     result = sweep_removed(table, set(stored))
 
-    assert result.deleted == ('Retracted b',)
+    assert result.submitted == ('Retracted b',)
     assert len(table.scan_requests) == 3
     assert 'ExclusiveStartKey' not in table.scan_requests[0]
+
+
+def test_reports_every_removal_when_deletions_span_several_flushes():
+    table = FakeTable(SPANNING_SURVIVORS | SPANNING_STALE)
+
+    result = sweep_removed(table, SPANNING_SURVIVORS)
+
+    assert result.aborted is False
+    assert set(result.submitted) == SPANNING_STALE
+    assert set(table.committed) == SPANNING_STALE
+
+
+def test_partial_flush_failure_reports_the_records_it_may_have_committed(caplog):
+    table = FakeTable(SPANNING_SURVIVORS | SPANNING_STALE, failing_flush=2, failing_flush_commits=True)
+
+    with caplog.at_level(logging.ERROR, logger='sweep'):
+        result = sweep_removed(table, SPANNING_SURVIVORS)
+
+    assert result.aborted is True
+    assert len(table.committed) == 2 * FLUSH_SIZE
+    assert set(result.submitted) == set(table.handed)
+    assert set(table.committed) <= set(result.submitted) <= SPANNING_STALE
+    assert 'sweep incomplete' in caplog.text
+
+
+def test_flush_failure_before_anything_commits_still_bounds_the_damage():
+    table = FakeTable(ARCHIVE | {'Retracted b', 'Renamed c'}, failing_flush=1)
+
+    result = sweep_removed(table, ARCHIVE)
+
+    assert result.aborted is True
+    assert table.committed == []
+    assert set(result.submitted) == {'Retracted b', 'Renamed c'}
 
 
 # 1 of 20 stored records is exactly the 5% ceiling; 2 of 20 is over it.
@@ -99,7 +159,7 @@ def test_ceiling_bounds_how_much_one_sweep_may_delete(stale_count, expected_abor
     result = sweep_removed(table, survivors)
 
     assert result.aborted is expected_aborted
-    assert table.deleted == ([] if expected_aborted else list(stale))
+    assert table.committed == ([] if expected_aborted else list(stale))
 
 
 def test_truncated_archive_fetch_aborts_instead_of_emptying_the_table():
@@ -108,8 +168,8 @@ def test_truncated_archive_fetch_aborts_instead_of_emptying_the_table():
     result = sweep_removed(table, set())
 
     assert result.aborted is True
-    assert result.deleted == ()
-    assert table.deleted == []
+    assert result.submitted == ()
+    assert table.committed == []
 
 
 def test_empty_table_is_not_a_division_by_zero():
@@ -117,24 +177,20 @@ def test_empty_table_is_not_a_division_by_zero():
 
     result = sweep_removed(table, ARCHIVE)
 
-    assert result.deleted == ()
+    assert result.submitted == ()
     assert result.aborted is False
 
 
-@pytest.mark.parametrize(
-    'failure',
-    [
-        pytest.param({'scan_error': RuntimeError('throttled')}, id='scan-fails'),
-        pytest.param({'delete_error': RuntimeError('throttled')}, id='delete-fails'),
-    ],
-)
-def test_dynamodb_failure_aborts_the_sweep_without_raising(failure):
-    table = FakeTable(ARCHIVE | {'Retracted b'}, **failure)
+def test_scan_failure_aborts_the_sweep_without_raising(caplog):
+    table = FakeTable(ARCHIVE | {'Retracted b'}, scan_error=RuntimeError('throttled'))
 
-    result = sweep_removed(table, ARCHIVE)
+    with caplog.at_level(logging.ERROR, logger='sweep'):
+        result = sweep_removed(table, ARCHIVE)
 
     assert result.aborted is True
-    assert result.deleted == ()
+    assert result.submitted == ()
+    assert table.committed == []
+    assert 'sweep aborted' in caplog.text
 
 
 def test_logs_every_deleted_name(caplog):

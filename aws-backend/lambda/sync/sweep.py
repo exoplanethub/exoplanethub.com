@@ -7,9 +7,10 @@ logger = logging.getLogger(__name__)
 MAXIMUM_DELETION_FRACTION = 0.05
 
 
+# `submitted` is what was handed to DynamoDB: exact when `aborted` is False, an upper bound when True.
 @dataclass(frozen=True)
 class SweepResult:
-    deleted: tuple[str, ...]
+    submitted: tuple[str, ...]
     aborted: bool
 
 
@@ -19,7 +20,7 @@ def sweep_removed(table, archive_names):
         return _delete_missing_from(table, archive_names)
     except Exception:
         logger.exception('sweep aborted: removal pass failed against %d archive records', len(archive_names))
-        return SweepResult(deleted=(), aborted=True)
+        return SweepResult(submitted=(), aborted=True)
 
 
 def _delete_missing_from(table, archive_names):
@@ -33,14 +34,25 @@ def _delete_missing_from(table, archive_names):
             len(stored_names),
             100 * MAXIMUM_DELETION_FRACTION,
         )
-        return SweepResult(deleted=(), aborted=True)
+        return SweepResult(submitted=(), aborted=True)
 
-    with table.batch_writer() as batch:
-        for name in stale:
-            logger.info('removing %s: no longer listed in the NASA archive', name)
-            batch.delete_item(Key={'pl_name': name})
+    return _submit_deletions(table, stale)
 
-    return SweepResult(deleted=tuple(stale), aborted=False)
+
+def _submit_deletions(table, stale):
+    submitted = []
+    try:
+        with table.batch_writer() as batch:
+            for name in stale:
+                logger.info('removing %s: no longer listed in the NASA archive', name)
+                # Counted before the call: a buffered item can commit in the very flush that raises.
+                submitted.append(name)
+                batch.delete_item(Key={'pl_name': name})
+    except Exception:
+        logger.exception('sweep incomplete: %d of %d removals submitted', len(submitted), len(stale))
+        return SweepResult(submitted=tuple(submitted), aborted=True)
+
+    return SweepResult(submitted=tuple(submitted), aborted=False)
 
 
 def _scan_names(table):
