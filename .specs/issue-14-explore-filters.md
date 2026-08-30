@@ -1,6 +1,6 @@
 # Spec: Explore Filters — search, ranges, method, star type, all in the URL
 Issue: #14
-Status: draft
+Status: approved
 
 ## Problem Statement
 ROADMAP item 3 says "Improve Advanced Filters", but there is little to improve: the explore
@@ -71,7 +71,8 @@ ARIA sliders are where a11y bugs live, and number inputs already give precise en
 Alternative: sync NASA's `st_spectype` column — rejected: backend schema change plus full
 resync, and the column is messy free text ("G2 V", "sdB", many nulls) that needs parsing anyway.
 Temperature bands are deterministic, already per-planet, and the band table sits next to the
-other filter logic. Open question below.
+other filter logic. Decided in #14 (2026-08-30): Zack deferred to team consensus, and both the
+architect and PM back temperature bands — no `st_spectype` column, no sync migration.
 
 Cut points (pinned here so they aren't an implementation-time judgment call; standard
 main-sequence boundaries per the Pecaut & Mamajek 2013 calibration, as commonly tabulated).
@@ -103,6 +104,3 @@ Order matches the shape approved in #14; each later task is a thin addition once
 2. Range filters for radius, mass, orbital period; add `pl_orbper` to `PLANET_SUMMARY_FIELDS`; log-scale control + number inputs (size: L)
 3. Upgrade discovery method to multi-select with `?method=` (size: S)
 4. Star type filter (`st_teff` into fields, teff→class bands) + "clear all" + live results count (size: M)
-
-## Open Questions
-- Q: Star-type filter — OK to derive O/B/A/F/G/K/M from stellar temperature (`st_teff`, already synced) rather than adding NASA's free-text spectral-type column to the backend sync? Friendly labels either way ("M — red dwarf"); trade-off is that a few edge-case stars will classify slightly differently than their catalogued spectral type, in exchange for zero backend changes and no string parsing. (PM seconds temperature bands; the exact cut points are now pinned in Technical Approach so this is fully concrete either way.)
