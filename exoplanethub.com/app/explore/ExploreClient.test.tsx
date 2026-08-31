@@ -64,7 +64,7 @@ function searchBox() {
 }
 
 function sortHeader(name: RegExp) {
-  return screen.getByRole('columnheader', { name });
+  return within(screen.getByRole('columnheader', { name })).getByRole('button', { name });
 }
 
 function rangeGroup(name: RegExp) {
@@ -104,6 +104,10 @@ function emptyState() {
 
 async function showGrid(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Grid' }));
+}
+
+function viewButton(name: 'Grid' | 'Table') {
+  return screen.getByRole('button', { name });
 }
 
 beforeEach(() => {
@@ -841,5 +845,27 @@ describe('ExploreClient clear all', () => {
     await user.click(screen.getByRole('button', { name }));
 
     expect(searchBox()).toHaveFocus();
+  });
+});
+
+describe('ExploreClient view toggle', () => {
+  it('reports which view is active, rather than signalling it by colour alone', async () => {
+    const { user } = renderExplore([ALPHA]);
+
+    expect(viewButton('Table')).toHaveAttribute('aria-pressed', 'true');
+    expect(viewButton('Grid')).toHaveAttribute('aria-pressed', 'false');
+
+    await showGrid(user);
+
+    expect(viewButton('Grid')).toHaveAttribute('aria-pressed', 'true');
+    expect(viewButton('Table')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('opens the planet dialog from the table, the default view', async () => {
+    const { user } = renderExplore([ALPHA]);
+
+    await user.click(screen.getByRole('button', { name: 'Alpha b' }));
+
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('Alpha b');
   });
 });
