@@ -1,20 +1,21 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { PlanetSummary } from '@/lib/mockPlanets';
+import { SortKey, SortOrder } from '@/lib/planetFilters';
+import { Pagination } from '@/lib/usePagination';
 import ESIInfoButton from './ESIInfoButton';
 import { getESIBand } from './esiBands';
 import styles from './PlanetTable.module.css';
 
 interface PlanetTableProps {
   planets: PlanetSummary[];
-  page: number;
-  itemsPerPage: number;
-  onPageChange: (page: number) => void;
+  pagination: Pagination;
   onPlanetClick: (planet: PlanetSummary) => void;
+  sortKey: SortKey;
+  sortOrder: SortOrder;
+  onSort: (key: SortKey) => void;
 }
 
-type SortKey = 'pl_name' | 'sy_dist' | 'pl_rade' | 'discoverymethod' | 'disc_year' | 'esi';
-type SortOrder = 'asc' | 'desc';
 type SortValue = PlanetSummary[SortKey];
 
 // Unmeasured planets sort last in both directions: null coerces to 0 under <, which would
@@ -53,94 +54,42 @@ function ESIScore({ score }: { score: number | undefined }) {
   );
 }
 
-export default function PlanetTable({ planets, page, itemsPerPage, onPageChange, onPlanetClick }: PlanetTableProps) {
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [sortKey, setSortKey] = useState<SortKey>('disc_year');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortKey(key);
-      setSortOrder('desc');
-    }
-  };
-
-  const filteredAndSorted = useMemo(() => {
-    let result = [...planets];
-
-    if (search) {
-      result = result.filter(p => 
-        p.pl_name.toLowerCase().includes(search.toLowerCase()) ||
-        (p.hostname && p.hostname.toLowerCase().includes(search.toLowerCase()))
-      );
-    }
-
-    if (typeFilter !== 'all') {
-      result = result.filter(p => p.discoverymethod === typeFilter);
-    }
-
-    result.sort((a, b) => compareSortValues(a[sortKey], b[sortKey], sortOrder));
-
-    return result;
-  }, [planets, search, typeFilter, sortKey, sortOrder]);
+export default function PlanetTable({ planets, pagination, onPlanetClick, sortKey, sortOrder, onSort }: PlanetTableProps) {
+  const { page, totalPages, goTo, pageItems } = pagination;
+  const sorted = useMemo(
+    () => [...planets].sort((a, b) => compareSortValues(a[sortKey], b[sortKey], sortOrder)),
+    [planets, sortKey, sortOrder],
+  );
 
   const esiAriaSort = sortKey !== 'esi' ? 'none' : sortOrder === 'asc' ? 'ascending' : 'descending';
 
-  const paginatedPlanets = filteredAndSorted.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-  const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
-
-  const methods = planets.map(p => p.discoverymethod).filter((m): m is string => Boolean(m));
-  const types = ['all', ...Array.from(new Set(methods))];
+  const paginatedPlanets = pageItems(sorted);
 
   return (
     <>
-      <div className={styles.controls}>
-        <input
-          type="text"
-          placeholder="Search exoplanets..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className={styles.searchInput}
-        />
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className={styles.select}
-        >
-          {types.map(type => (
-            <option key={type} value={type}>
-              {type === 'all' ? 'All Types' : type}
-            </option>
-          ))}
-        </select>
-      </div>
-
       <div className={styles.tableContainer} role="region" aria-label="Exoplanet results" tabIndex={0}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th onClick={() => handleSort('pl_name')}>
+              <th onClick={() => onSort('pl_name')}>
                 Planet {sortKey === 'pl_name' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
               </th>
               <th>Star</th>
-              <th onClick={() => handleSort('discoverymethod')}>
+              <th onClick={() => onSort('discoverymethod')}>
                 Method {sortKey === 'discoverymethod' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
               </th>
-              <th onClick={() => handleSort('pl_rade')}>
+              <th onClick={() => onSort('pl_rade')}>
                 Radius {sortKey === 'pl_rade' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
               </th>
-              <th onClick={() => handleSort('sy_dist')}>
+              <th onClick={() => onSort('sy_dist')}>
                 Distance {sortKey === 'sy_dist' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
               </th>
-              <th onClick={() => handleSort('disc_year')}>
+              <th onClick={() => onSort('disc_year')}>
                 Discovered {sortKey === 'disc_year' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
               </th>
               <th className={styles.esiHeader} aria-sort={esiAriaSort}>
                 <span className={styles.esiHeaderContent}>
-                  <button className={styles.sortButton} onClick={() => handleSort('esi')}>
+                  <button className={styles.sortButton} onClick={() => onSort('esi')}>
                     ESI {sortKey === 'esi' && <span className={styles.sortIcon} aria-hidden="true">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
                   </button>
                   <ESIInfoButton />
@@ -166,17 +115,17 @@ export default function PlanetTable({ planets, page, itemsPerPage, onPageChange,
 
       <div className={styles.pagination}>
         <button 
-          onClick={() => onPageChange(Math.max(1, page - 1))} 
+          onClick={() => goTo(page - 1)} 
           disabled={page === 1}
           className={styles.paginationBtn}
         >
           Previous
         </button>
         <span className={styles.pageInfo}>
-          Page {page} of {totalPages} ({filteredAndSorted.length} planets)
+          Page {page} of {totalPages} ({planets.length} planets)
         </span>
         <button 
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))} 
+          onClick={() => goTo(page + 1)} 
           disabled={page === totalPages}
           className={styles.paginationBtn}
         >

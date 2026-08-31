@@ -1,16 +1,30 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import PlanetCard from '@/components/explore/PlanetCard';
 import PlanetTable from '@/components/explore/PlanetTable';
 import PlanetModal from '@/components/explore/PlanetModal';
+import FilterControls from '@/components/explore/FilterControls';
 import { PlanetSummary } from '@/lib/mockPlanets';
+import { FilterState, SortKey, applyFilters, withSort } from '@/lib/planetFilters';
+import { useFilterParams } from '@/lib/useFilterParams';
+import { usePagination } from '@/lib/usePagination';
 import styles from './page.module.css';
+
+const ITEMS_PER_PAGE = 50;
 
 export default function ExploreClient({ planets }: { planets: PlanetSummary[] }) {
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetSummary | null>(null);
   const [view, setView] = useState<'grid' | 'table'>('table');
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 50;
+  const [filters, setFilters] = useFilterParams();
+
+  const filtered = useMemo(() => applyFilters(planets, filters), [planets, filters]);
+  const pagination = usePagination(filtered.length, ITEMS_PER_PAGE);
+  const { page, totalPages, goTo, pageItems } = pagination;
+
+  const changeFilters = (next: FilterState) => {
+    setFilters(next);
+    goTo(1);
+  };
 
   return (
     <main className={styles.page}>
@@ -34,11 +48,13 @@ export default function ExploreClient({ planets }: { planets: PlanetSummary[] })
           </button>
         </div>
       </div>
-      
+
       <div className={styles.content}>
+        <FilterControls planets={planets} filters={filters} onChange={changeFilters} />
+
         {view === 'grid' ? (
           <div className={styles.grid}>
-            {planets.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((planet) => (
+            {pageItems(filtered).map((planet) => (
               <PlanetCard 
                 key={planet.pl_name} 
                 planet={planet} 
@@ -48,11 +64,12 @@ export default function ExploreClient({ planets }: { planets: PlanetSummary[] })
           </div>
         ) : (
           <PlanetTable 
-            planets={planets}
-            page={page}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setPage}
+            planets={filtered}
+            pagination={pagination}
             onPlanetClick={setSelectedPlanet}
+            sortKey={filters.sortKey}
+            sortOrder={filters.sortOrder}
+            onSort={(key: SortKey) => changeFilters(withSort(filters, key))}
           />
         )}
       </div>
@@ -60,18 +77,18 @@ export default function ExploreClient({ planets }: { planets: PlanetSummary[] })
       {view === 'grid' && (
         <div className={styles.pagination}>
           <button 
-            onClick={() => setPage(p => Math.max(1, p - 1))} 
+            onClick={() => goTo(page - 1)} 
             disabled={page === 1}
             className={styles.paginationBtn}
           >
             Previous
           </button>
           <span className={styles.pageInfo}>
-            Page {page} of {Math.ceil(planets.length / itemsPerPage)}
+            Page {page} of {totalPages}
           </span>
           <button 
-            onClick={() => setPage(p => Math.min(Math.ceil(planets.length / itemsPerPage), p + 1))} 
-            disabled={page === Math.ceil(planets.length / itemsPerPage)}
+            onClick={() => goTo(page + 1)} 
+            disabled={page === totalPages}
             className={styles.paginationBtn}
           >
             Next
