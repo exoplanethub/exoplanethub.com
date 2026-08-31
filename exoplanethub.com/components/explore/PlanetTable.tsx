@@ -3,6 +3,7 @@ import { PlanetSummary } from '@/lib/mockPlanets';
 import { SortKey, SortOrder } from '@/lib/planetFilters';
 import { Pagination } from '@/lib/usePagination';
 import ESIInfoButton from './ESIInfoButton';
+import PaginationControls from './PaginationControls';
 import { getESIBand } from './esiBands';
 import styles from './PlanetTable.module.css';
 
@@ -36,7 +37,7 @@ function ESIScore({ score }: { score: number | undefined }) {
 }
 
 export default function PlanetTable({ planets, pagination, onPlanetClick, sortKey, sortOrder, onSort }: PlanetTableProps) {
-  const { page, totalPages, goTo, pageItems } = pagination;
+  const { pageItems } = pagination;
 
   const esiAriaSort = sortKey !== 'esi' ? 'none' : sortOrder === 'asc' ? 'ascending' : 'descending';
 
@@ -90,25 +91,7 @@ export default function PlanetTable({ planets, pagination, onPlanetClick, sortKe
         </table>
       </div>
 
-      <div className={styles.pagination}>
-        <button 
-          onClick={() => goTo(page - 1)} 
-          disabled={page === 1}
-          className={styles.paginationBtn}
-        >
-          Previous
-        </button>
-        <span className={styles.pageInfo}>
-          Page {page} of {totalPages} ({planets.length} planets)
-        </span>
-        <button 
-          onClick={() => goTo(page + 1)} 
-          disabled={page === totalPages}
-          className={styles.paginationBtn}
-        >
-          Next
-        </button>
-      </div>
+      <PaginationControls pagination={pagination} />
     </>
   );
 }

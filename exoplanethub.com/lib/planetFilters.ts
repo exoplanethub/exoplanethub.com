@@ -1,4 +1,5 @@
 import { PlanetSummary } from '@/lib/mockPlanets';
+import { StarClass, STAR_CLASSES, isStarClass, starClassOf } from '@/lib/starBands';
 
 export const SORT_KEYS = [
   'pl_name',
@@ -32,6 +33,7 @@ export type RangeFilters = Record<RangeKey, Range>;
 export interface FilterState {
   q: string;
   methods: string[];
+  starClasses: StarClass[];
   ranges: RangeFilters;
   sortKey: SortKey;
   sortOrder: SortOrder;
@@ -50,6 +52,7 @@ function rangesFrom(read: (key: RangeKey) => Range): RangeFilters {
 export const DEFAULT_FILTERS: FilterState = {
   q: '',
   methods: [],
+  starClasses: [],
   ranges: rangesFrom(() => UNBOUNDED),
   sortKey: DEFAULT_SORT_KEY,
   sortOrder: DEFAULT_SORT_ORDER,
@@ -83,12 +86,10 @@ export function parseBound(raw: string): number | null | undefined {
   return Number.isFinite(value) ? value : undefined;
 }
 
-// Sorted on the way in as well as out, so a hand-written ?method= lands on the same state — and
-// so the same canonical URL — as the one the checkboxes would have produced.
-function parseMethods(raw: string | null): string[] {
+function parseList(raw: string | null): string[] {
   const named = raw?.split(LIST_SEPARATOR).map((value) => value.trim()) ?? [];
 
-  return Array.from(new Set(named.filter(Boolean))).sort();
+  return Array.from(new Set(named.filter(Boolean)));
 }
 
 function parseRange(raw: string | null): Range {
@@ -108,11 +109,15 @@ function serializeRange(range: Range): string {
 export function parseFilters(params: URLSearchParams): FilterState {
   return {
     q: params.get('q') ?? '',
-    methods: parseMethods(params.get('method')),
+    methods: parseList(params.get('method')),
+    starClasses: parseList(params.get('star')).filter(isStarClass),
     ranges: rangesFrom((key) => parseRange(params.get(key))),
     ...parseSort(params.get('sort')),
   };
 }
+
+const bySpectralOrder = (a: StarClass, b: StarClass) =>
+  STAR_CLASSES.indexOf(a) - STAR_CLASSES.indexOf(b);
 
 export function serializeFilters(state: FilterState): string {
   const params = new URLSearchParams();
@@ -120,7 +125,12 @@ export function serializeFilters(state: FilterState): string {
   const q = state.q.trim();
 
   if (q) params.set('q', q);
-  if (state.methods.length > 0) params.set('method', state.methods.join(LIST_SEPARATOR));
+
+  // The one place a selection is ordered, so a set has exactly one URL however it was assembled.
+  if (state.methods.length > 0) params.set('method', [...state.methods].sort().join(LIST_SEPARATOR));
+  if (state.starClasses.length > 0) {
+    params.set('star', [...state.starClasses].sort(bySpectralOrder).join(LIST_SEPARATOR));
+  }
 
   for (const key of RANGE_KEYS) {
     const range = serializeRange(state.ranges[key]);
@@ -144,11 +154,22 @@ export function withRange(state: FilterState, key: RangeKey, range: Range): Filt
   return { ...state, ranges: { ...state.ranges, [key]: range } };
 }
 
-export function withMethod(state: FilterState, method: string, selected: boolean): FilterState {
-  const rest = state.methods.filter((current) => current !== method);
+function toggled<T extends string>(values: readonly T[], value: T, selected: boolean): T[] {
+  const rest = values.filter((current) => current !== value);
 
-  // Sorted so the same set of methods shares one URL however the visitor happened to click it.
-  return { ...state, methods: selected ? [...rest, method].sort() : rest };
+  return selected ? [...rest, value] : rest;
+}
+
+export function withMethod(state: FilterState, method: string, selected: boolean): FilterState {
+  return { ...state, methods: toggled(state.methods, method, selected) };
+}
+
+export function withStarClass(
+  state: FilterState,
+  starClass: StarClass,
+  selected: boolean
+): FilterState {
+  return { ...state, starClasses: toggled(state.starClasses, starClass, selected) };
 }
 
 function matchesText(planet: PlanetSummary, needle: string): boolean {
@@ -181,6 +202,14 @@ function activePredicates(state: FilterState): PlanetPredicate[] {
     predicates.push((planet) => planet.discoverymethod !== null && chosen.has(planet.discoverymethod));
   }
 
+  if (state.starClasses.length > 0) {
+    const chosen = new Set<StarClass>(state.starClasses);
+    predicates.push((planet) => {
+      const starClass = starClassOf(planet.st_teff);
+      return starClass !== null && chosen.has(starClass);
+    });
+  }
+
   for (const key of RANGE_KEYS) {
     const range = state.ranges[key];
     const field = RANGE_FIELDS[key];
@@ -189,6 +218,16 @@ function activePredicates(state: FilterState): PlanetPredicate[] {
   }
 
   return predicates;
+}
+
+// Derived from the predicates themselves, so a filter added later cannot forget to count here.
+export function isFiltered(state: FilterState): boolean {
+  return activePredicates(state).length > 0;
+}
+
+// Sort is not a filter — `activePredicates` never registers it — so clearing must leave it standing.
+export function cleared(state: FilterState): FilterState {
+  return { ...DEFAULT_FILTERS, sortKey: state.sortKey, sortOrder: state.sortOrder };
 }
 
 export function applyFilters(planets: PlanetSummary[], state: FilterState): PlanetSummary[] {

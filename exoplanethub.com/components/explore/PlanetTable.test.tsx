@@ -248,29 +248,19 @@ describe('PlanetTable ESI column', () => {
 });
 
 describe('PlanetTable pagination', () => {
-  it('shows only the current page and reports the unpaginated total', () => {
+  it('shows only the current page of rows', () => {
     renderTable({ itemsPerPage: 2 });
 
     expect(renderedNames()).toEqual(['Alpha b', 'Beta c']);
-    expect(screen.getByText(/page 1 of 2 \(3 planets\)/i)).toBeInTheDocument();
   });
 
-  it('reports a single empty page rather than "page 1 of 0" when nothing matches', () => {
-    renderTable({ planets: [] });
-
-    expect(screen.getByText(/page 1 of 1 \(0 planets\)/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
-  });
-
-  it('disables Previous on the first page and advances via Next', async () => {
+  it('advances the rows when the shared control pages forward', async () => {
     const user = userEvent.setup();
     renderTable({ itemsPerPage: 2 });
 
-    expect(screen.getByRole('button', { name: /previous/i })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     expect(renderedNames()).toEqual(['Gamma d']);
-    expect(screen.getByText(/page 2 of 2 \(3 planets\)/i)).toBeInTheDocument();
   });
 
   // The page count belongs to usePagination alone; the table must report it, never recompute it.
@@ -286,7 +276,7 @@ describe('PlanetTable pagination', () => {
       />,
     );
 
-    expect(screen.getByText(/page 2 of 7 \(3 planets\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/page 2 of 7/i)).toBeInTheDocument();
   });
 });
 

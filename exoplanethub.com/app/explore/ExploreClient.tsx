@@ -1,11 +1,21 @@
 'use client';
-import { useMemo, useState } from 'react';
-import PlanetCard from '@/components/explore/PlanetCard';
-import PlanetTable from '@/components/explore/PlanetTable';
-import PlanetModal from '@/components/explore/PlanetModal';
+import { useMemo, useRef, useState } from 'react';
 import FilterControls from '@/components/explore/FilterControls';
+import NoResults from '@/components/explore/NoResults';
+import PlanetGrid from '@/components/explore/PlanetGrid';
+import PlanetModal from '@/components/explore/PlanetModal';
+import PlanetTable from '@/components/explore/PlanetTable';
+import ResultsCount from '@/components/explore/ResultsCount';
 import { PlanetSummary } from '@/lib/mockPlanets';
-import { FilterState, SortKey, applyFilters, sortPlanets, withSort } from '@/lib/planetFilters';
+import {
+  FilterState,
+  SortKey,
+  applyFilters,
+  cleared,
+  isFiltered,
+  sortPlanets,
+  withSort,
+} from '@/lib/planetFilters';
 import { useFilterParams } from '@/lib/useFilterParams';
 import { usePagination } from '@/lib/usePagination';
 import styles from './page.module.css';
@@ -16,17 +26,24 @@ export default function ExploreClient({ planets }: { planets: PlanetSummary[] })
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetSummary | null>(null);
   const [view, setView] = useState<'grid' | 'table'>('table');
   const [filters, setFilters] = useFilterParams();
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const visible = useMemo(
     () => sortPlanets(applyFilters(planets, filters), filters),
     [planets, filters],
   );
   const pagination = usePagination(visible.length, ITEMS_PER_PAGE);
-  const { page, totalPages, goTo, pageItems } = pagination;
 
   const changeFilters = (next: FilterState) => {
     setFilters(next);
-    goTo(1);
+    pagination.goTo(1);
+  };
+
+  // Every control that clears is gone or disabled the instant it works, so focus needs somewhere
+  // real to land; the search box is both still present and the likeliest next move.
+  const clearFilters = () => {
+    changeFilters(cleared(filters));
+    searchRef.current?.focus();
   };
 
   return (
@@ -53,18 +70,24 @@ export default function ExploreClient({ planets }: { planets: PlanetSummary[] })
       </div>
 
       <div className={styles.content}>
-        <FilterControls planets={planets} filters={filters} onChange={changeFilters} />
+        <FilterControls
+          planets={planets}
+          filters={filters}
+          onChange={changeFilters}
+          onClear={clearFilters}
+          searchRef={searchRef}
+        />
 
-        {view === 'grid' ? (
-          <div className={styles.grid}>
-            {pageItems(visible).map((planet) => (
-              <PlanetCard 
-                key={planet.pl_name} 
-                planet={planet} 
-                onClick={() => setSelectedPlanet(planet)}
-              />
-            ))}
-          </div>
+        <ResultsCount visible={visible.length} total={planets.length} />
+
+        {visible.length === 0 ? (
+          <NoResults onClear={isFiltered(filters) ? clearFilters : undefined} />
+        ) : view === 'grid' ? (
+          <PlanetGrid
+            planets={visible}
+            pagination={pagination}
+            onPlanetClick={setSelectedPlanet}
+          />
         ) : (
           <PlanetTable 
             planets={visible}
@@ -76,28 +99,6 @@ export default function ExploreClient({ planets }: { planets: PlanetSummary[] })
           />
         )}
       </div>
-      
-      {view === 'grid' && (
-        <div className={styles.pagination}>
-          <button 
-            onClick={() => goTo(page - 1)} 
-            disabled={page === 1}
-            className={styles.paginationBtn}
-          >
-            Previous
-          </button>
-          <span className={styles.pageInfo}>
-            Page {page} of {totalPages}
-          </span>
-          <button 
-            onClick={() => goTo(page + 1)} 
-            disabled={page === totalPages}
-            className={styles.paginationBtn}
-          >
-            Next
-          </button>
-        </div>
-      )}
 
       {selectedPlanet && (
         <PlanetModal 

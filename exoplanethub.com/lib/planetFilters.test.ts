@@ -7,12 +7,15 @@ import {
   RangeKey,
   applyFilters,
   discoveryMethods,
+  cleared,
+  isFiltered,
   measuredExtent,
   parseFilters,
   serializeFilters,
   sortPlanets,
   withMethod,
   withRange,
+  withStarClass,
   withSort,
 } from '@/lib/planetFilters';
 
@@ -26,6 +29,7 @@ function makePlanet(overrides: Partial<PlanetSummary> & Pick<PlanetSummary, 'pl_
     pl_rade: 1,
     pl_bmasse: 1,
     pl_eqt: 1,
+    st_teff: 5800,
     ...overrides,
   };
 }
@@ -74,14 +78,14 @@ describe('parseFilters', () => {
   });
 
   it('normalises the order the URL gave, so one set of methods has exactly one URL', () => {
-    expect(parse('method=Transit,Astrometry')).toEqual(parse('method=Astrometry,Transit'));
     expect(serializeFilters(parse('method=Transit,Astrometry'))).toBe('method=Astrometry%2CTransit');
+    expect(serializeFilters(parse('method=Astrometry,Transit'))).toBe('method=Astrometry%2CTransit');
   });
 
   it.each([
-    ['empty entries', 'method=Transit,,Imaging', ['Imaging', 'Transit']],
-    ['padding around each name', 'method=%20Transit%20,%20Imaging%20', ['Imaging', 'Transit']],
-    ['a repeated method', 'method=Transit,Imaging,Transit', ['Imaging', 'Transit']],
+    ['empty entries', 'method=Transit,,Imaging', ['Transit', 'Imaging']],
+    ['padding around each name', 'method=%20Transit%20,%20Imaging%20', ['Transit', 'Imaging']],
+    ['a repeated method', 'method=Transit,Imaging,Transit', ['Transit', 'Imaging']],
     ['a list of nothing but separators', 'method=,,', []],
   ])('drops %s rather than filtering on them', (_label, query, expected) => {
     expect(parse(query)).toMatchObject({ methods: expected });
@@ -168,6 +172,8 @@ describe('serializeFilters', () => {
     ['a search', { ...DEFAULT_FILTERS, q: 'kepler 186' }],
     ['a method', { ...DEFAULT_FILTERS, methods: ['Radial Velocity'] }],
     ['several methods', { ...DEFAULT_FILTERS, methods: ['Imaging', 'Radial Velocity', 'Transit'] }],
+    ['a star class', { ...DEFAULT_FILTERS, starClasses: ['G' as const] }],
+    ['several star classes', { ...DEFAULT_FILTERS, starClasses: ['B' as const, 'G' as const, 'M' as const] }],
     ['a non-default sort', { ...DEFAULT_FILTERS, sortKey: 'esi' as const, sortOrder: 'asc' as const }],
     ['a range bounded at both ends', withRange(DEFAULT_FILTERS, 'radius', { min: 0.5, max: 2 })],
     ['a range open at the top', withRange(DEFAULT_FILTERS, 'mass', { min: 10, max: null })],
@@ -180,6 +186,7 @@ describe('serializeFilters', () => {
         ...withRange(withRange(DEFAULT_FILTERS, 'radius', { min: 0.5, max: 2 }), 'period', { min: null, max: 365 }),
         q: 'wolf',
         methods: ['Transit'],
+        starClasses: ['G' as const, 'M' as const],
         sortKey: 'sy_dist' as const,
         sortOrder: 'asc' as const,
       },
@@ -232,7 +239,7 @@ describe('withMethod', () => {
   it('adds and removes one method without disturbing the others', () => {
     const one = withMethod(DEFAULT_FILTERS, 'Transit', true);
 
-    expect(withMethod(one, 'Imaging', true).methods).toEqual(['Imaging', 'Transit']);
+    expect(withMethod(one, 'Imaging', true).methods).toEqual(['Transit', 'Imaging']);
     expect(withMethod(withMethod(one, 'Imaging', true), 'Transit', false).methods).toEqual(['Imaging']);
   });
 
@@ -494,5 +501,158 @@ describe('discoveryMethods', () => {
 
   it('leaves out planets the archive gives no method for', () => {
     expect(discoveryMethods([makePlanet({ pl_name: 'Unknown', discoverymethod: null })])).toEqual([]);
+  });
+});
+
+describe('parseFilters over ?star=', () => {
+  it('reads a comma-separated class list', () => {
+    expect(parse('star=G,M')).toMatchObject({ starClasses: ['G', 'M'] });
+  });
+
+  it('orders the URL it writes by temperature, not alphabetically', () => {
+    expect(serializeFilters(parse('star=M,B,G'))).toBe('star=B%2CG%2CM');
+  });
+
+  it('gives one set of classes exactly one URL however the visitor assembled it', () => {
+    expect(serializeFilters(parse('star=M,G'))).toBe(serializeFilters(parse('star=G,M')));
+  });
+
+  it.each([
+    ['a class that does not exist', 'star=Q', []],
+    ['the lowercase form of a real class', 'star=g', []],
+    ['a spectral subtype', 'star=G2V', []],
+    ['an unclassified band the URL invented', 'star=L,T', []],
+    ['junk mixed in with a real class', 'star=Q,G,,%20', ['G']],
+    ['a repeated class', 'star=G,M,G', ['G', 'M']],
+    ['nothing but separators', 'star=,,', []],
+  ])('ignores %s rather than erroring', (_label, query, expected) => {
+    expect(parse(query)).toMatchObject({ starClasses: expected });
+  });
+
+  it('leaves an empty star list out of the URL entirely', () => {
+    expect(serializeFilters({ ...DEFAULT_FILTERS, starClasses: [] })).toBe('');
+  });
+});
+
+describe('withStarClass', () => {
+  it('adds and removes one class without disturbing the others', () => {
+    const one = withStarClass(DEFAULT_FILTERS, 'G', true);
+
+    expect(withStarClass(one, 'M', true).starClasses).toEqual(['G', 'M']);
+    expect(withStarClass(withStarClass(one, 'M', true), 'G', false).starClasses).toEqual(['M']);
+  });
+
+  it('orders the selection so click order cannot produce two URLs for one set', () => {
+    const hotFirst = withStarClass(withStarClass(DEFAULT_FILTERS, 'G', true), 'M', true);
+    const coolFirst = withStarClass(withStarClass(DEFAULT_FILTERS, 'M', true), 'G', true);
+
+    expect(serializeFilters(hotFirst)).toBe(serializeFilters(coolFirst));
+    expect(serializeFilters(hotFirst)).toBe('star=G%2CM');
+  });
+
+  it('never selects the same class twice', () => {
+    expect(withStarClass(withStarClass(DEFAULT_FILTERS, 'G', true), 'G', true).starClasses).toEqual(['G']);
+  });
+
+  it('deselecting a class that was never selected is a no-op', () => {
+    expect(withStarClass(DEFAULT_FILTERS, 'G', false).starClasses).toEqual([]);
+  });
+
+  it('leaves the other filters alone', () => {
+    expect(withStarClass({ ...DEFAULT_FILTERS, q: 'wolf', methods: ['Transit'] }, 'M', true)).toMatchObject({
+      q: 'wolf',
+      methods: ['Transit'],
+      starClasses: ['M'],
+    });
+  });
+});
+
+describe('applyFilters over star type', () => {
+  const SUNLIKE = makePlanet({ pl_name: 'Sunlike b', st_teff: 5800 });
+  const RED = makePlanet({ pl_name: 'Red c', st_teff: 3000 });
+  const BLUE = makePlanet({ pl_name: 'Blue d', st_teff: 12000 });
+  const BROWN = makePlanet({ pl_name: 'Brown e', st_teff: 1200 });
+  const UNMEASURED = makePlanet({ pl_name: 'Unmeasured f', st_teff: null });
+  const ALL = [SUNLIKE, RED, BLUE, BROWN, UNMEASURED];
+
+  function starNames(starClasses: FilterState['starClasses']) {
+    return applyFilters(ALL, { ...DEFAULT_FILTERS, starClasses }).map((planet) => planet.pl_name);
+  }
+
+  it('keeps only the planets whose host falls in the chosen class', () => {
+    expect(starNames(['G'])).toEqual(['Sunlike b']);
+  });
+
+  it('takes the union of several classes rather than the intersection', () => {
+    expect(starNames(['B', 'M'])).toEqual(['Red c', 'Blue d']);
+  });
+
+  it('returns every planet, unclassified hosts included, while the filter is inactive', () => {
+    expect(starNames([])).toHaveLength(ALL.length);
+  });
+
+  it.each([
+    ['a host cooler than the M band', 'Brown e'],
+    ['a host the archive never measured', 'Unmeasured f'],
+  ])('hides %s while any class is chosen', (_label, hidden) => {
+    expect(starNames(['G', 'M'])).not.toContain(hidden);
+    expect(starNames(['O', 'B', 'A', 'F', 'G', 'K', 'M'])).not.toContain(hidden);
+  });
+
+  it('narrows rather than widens when combined with another filter', () => {
+    expect(applyFilters(ALL, { ...DEFAULT_FILTERS, starClasses: ['G'], q: 'red' })).toEqual([]);
+  });
+});
+
+describe('isFiltered', () => {
+  it('reports the default view as unfiltered', () => {
+    expect(isFiltered(DEFAULT_FILTERS)).toBe(false);
+  });
+
+  it.each([
+    ['a search', { q: 'kepler' }],
+    ['a method', { methods: ['Transit'] }],
+    ['a star class', { starClasses: ['G' as const] }],
+    ['a range', { ranges: { ...DEFAULT_FILTERS.ranges, radius: { min: 1, max: null } } }],
+  ])('reports %s as filtered', (_label, active) => {
+    expect(isFiltered({ ...DEFAULT_FILTERS, ...active })).toBe(true);
+  });
+
+  // Sort reorders the page; it never hides a planet, so it alone leaves nothing to clear.
+  it('does not count sort as a filter', () => {
+    expect(isFiltered({ ...DEFAULT_FILTERS, sortKey: 'esi', sortOrder: 'asc' })).toBe(false);
+  });
+
+  it('does not count a search of nothing but whitespace', () => {
+    expect(isFiltered({ ...DEFAULT_FILTERS, q: '   ' })).toBe(false);
+  });
+});
+
+describe('cleared', () => {
+  const EVERYTHING: FilterState = {
+    ...DEFAULT_FILTERS,
+    q: 'kepler',
+    methods: ['Transit'],
+    starClasses: ['G'],
+    ranges: { ...DEFAULT_FILTERS.ranges, radius: { min: 1, max: 2 } },
+    sortKey: 'pl_rade',
+    sortOrder: 'asc',
+  };
+
+  it('drops every filter isFiltered counts', () => {
+    expect(isFiltered(cleared(EVERYTHING))).toBe(false);
+  });
+
+  // The same rule as isFiltered, in the same module, so the two can never disagree about sort.
+  it('keeps the sort, which isFiltered does not count as a filter', () => {
+    expect(cleared(EVERYTHING)).toMatchObject({ sortKey: 'pl_rade', sortOrder: 'asc' });
+  });
+
+  it('leaves the state it was handed alone', () => {
+    const before = structuredClone(EVERYTHING);
+
+    cleared(EVERYTHING);
+
+    expect(EVERYTHING).toEqual(before);
   });
 });

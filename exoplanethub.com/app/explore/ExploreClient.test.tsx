@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import rangeStyles from '@/components/explore/RangeFilter.module.css';
@@ -27,6 +27,7 @@ function makePlanet(overrides: Partial<PlanetSummary> & Pick<PlanetSummary, 'pl_
     pl_rade: 1,
     pl_bmasse: 1,
     pl_eqt: 1,
+    st_teff: 5800,
     ...overrides,
   };
 }
@@ -85,6 +86,22 @@ function methodBox(name: string) {
   });
 }
 
+function starBox(name: RegExp) {
+  return within(screen.getByRole('group', { name: /star type/i })).getByRole('checkbox', { name });
+}
+
+function resultsCount() {
+  return screen.getByText(/^\d+ of \d+ planets$/i);
+}
+
+function announcement() {
+  return screen.getByRole('status');
+}
+
+function emptyState() {
+  return screen.queryByText(/no planets match these filters/i);
+}
+
 async function showGrid(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Grid' }));
 }
@@ -132,7 +149,7 @@ describe('ExploreClient filtering', () => {
     renderExplore();
 
     expect(methodBox('Astrometry')).toBeChecked();
-    expect(tableNames()).toEqual([]);
+    expect(emptyState()).toBeInTheDocument();
   });
 
   it('offers the discovery methods present in the data and applies the chosen one', async () => {
@@ -296,7 +313,8 @@ describe('ExploreClient pagination', () => {
 
     await user.type(searchBox(), 'Planet 0');
 
-    expect(screen.getByText(/page 1 of 2 \(100 planets\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
+    expect(resultsCount()).toHaveTextContent('100 of 120 planets');
   });
 
   // Back/Forward changes the filters without going through the reset, leaving the page behind.
@@ -306,7 +324,7 @@ describe('ExploreClient pagination', () => {
 
     navigateTo('q=Planet 007');
 
-    expect(screen.getByText(/page 1 of 1 \(1 planets\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/page 1 of 1/i)).toBeInTheDocument();
     expect(tableNames()).toEqual(['Planet 007']);
   });
 
@@ -340,15 +358,21 @@ describe('ExploreClient pagination', () => {
     expect(cardNames()).toHaveLength(50);
   });
 
-  it('clamps the grid to a single empty page when nothing matches', async () => {
+  // The empty state replaces the list, so there is no page to be stranded on — and clearing
+  // has to land back on page 1 rather than the page the visitor left.
+  it('drops the grid paging while nothing matches and returns to page 1 after clearing', async () => {
     const { user } = renderExplore(many);
     await showGrid(user);
     await goToPage2(user);
 
     await user.type(searchBox(), 'no such planet');
-
-    expect(screen.getByText(/page 1 of 1/i)).toBeInTheDocument();
+    expect(emptyState()).toBeInTheDocument();
+    expect(screen.queryByText(/page 1 of 1/i)).toBeNull();
     expect(screen.queryAllByRole('heading', { level: 3 })).toEqual([]);
+
+    await user.click(screen.getByRole('button', { name: /clear all filters/i }));
+
+    expect(screen.getByText(/page 1 of 3/i)).toBeInTheDocument();
   });
 });
 
@@ -573,6 +597,249 @@ describe('ExploreClient range filters', () => {
 
     fireEvent.change(boundInput(/radius/i, /max/i), { target: { value: '100' } });
 
-    expect(screen.getByText(/page 1 of 2 \(100 planets\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
+    expect(resultsCount()).toHaveTextContent('100 of 120 planets');
+  });
+});
+
+describe('ExploreClient star type filter', () => {
+  const SUNLIKE = makePlanet({ pl_name: 'Sunlike b', st_teff: 5800 });
+  const RED = makePlanet({ pl_name: 'Red c', st_teff: 3000 });
+  const BLUE = makePlanet({ pl_name: 'Blue d', st_teff: 12000 });
+  const BROWN = makePlanet({ pl_name: 'Brown e', st_teff: 1200 });
+  const UNMEASURED = makePlanet({ pl_name: 'Unmeasured f', st_teff: null });
+  const STARS = [SUNLIKE, RED, BLUE, BROWN, UNMEASURED];
+
+  it('filters the table by the class the URL names', () => {
+    query = 'star=G';
+    renderExplore(STARS);
+
+    expect(tableNames()).toEqual(['Sunlike b']);
+  });
+
+  it('filters the grid by the same class, so both views agree', async () => {
+    query = 'star=M';
+    const { user } = renderExplore(STARS);
+
+    await showGrid(user);
+
+    expect(cardNames()).toEqual(['Red c']);
+  });
+
+  it('widens rather than narrows the results as more classes are ticked', async () => {
+    const { user } = renderExplore(STARS);
+
+    await user.click(starBox(/sun-like/i));
+    expect(tableNames()).toEqual(['Sunlike b']);
+
+    await user.click(starBox(/red dwarf/i));
+    expect(tableNames()).toEqual(['Sunlike b', 'Red c']);
+  });
+
+  it.each([
+    ['a host cooler than the M band', 'Brown e'],
+    ['a host the archive never measured', 'Unmeasured f'],
+  ])('hides %s while a class is chosen, and says so', (_label, hidden) => {
+    query = 'star=G,M';
+    renderExplore(STARS);
+
+    expect(tableNames()).not.toContain(hidden);
+    expect(screen.getByText(/unclassified/i)).toBeInTheDocument();
+  });
+
+  it('shows the unclassified planets again once the filter is off', () => {
+    const { navigateTo } = renderExplore(STARS);
+    expect(tableNames()).toHaveLength(STARS.length);
+
+    navigateTo('star=G');
+    expect(tableNames()).toEqual(['Sunlike b']);
+
+    navigateTo('');
+    expect(tableNames()).toHaveLength(STARS.length);
+    expect(screen.queryByText(/unclassified/i)).toBeNull();
+  });
+
+  it('restores every ticked class from a shared URL', () => {
+    query = 'star=B,M';
+    renderExplore(STARS);
+
+    expect(starBox(/blue-white/i)).toBeChecked();
+    expect(starBox(/red dwarf/i)).toBeChecked();
+    expect(starBox(/sun-like/i)).not.toBeChecked();
+    expect(tableNames()).toEqual(['Red c', 'Blue d']);
+  });
+
+  it('writes every ticked class to one comma-separated param, hottest first', () => {
+    vi.useFakeTimers();
+    renderExplore(STARS);
+
+    fireEvent.click(starBox(/red dwarf/i));
+    vi.advanceTimersByTime(1000);
+    expect(replace).toHaveBeenLastCalledWith('/explore?star=M', { scroll: false });
+
+    fireEvent.click(starBox(/blue-white/i));
+    vi.advanceTimersByTime(1000);
+    expect(replace).toHaveBeenLastCalledWith('/explore?star=B%2CM', { scroll: false });
+
+    fireEvent.click(starBox(/red dwarf/i));
+    vi.advanceTimersByTime(1000);
+    expect(replace).toHaveBeenLastCalledWith('/explore?star=B', { scroll: false });
+  });
+
+  it.each([
+    ['a class that does not exist', 'star=Q'],
+    ['a spectral subtype', 'star=G2V'],
+    ['nothing but separators', 'star=,,'],
+    ['an empty value', 'star='],
+  ])('renders the ordinary unfiltered page for %s', (_label, badQuery) => {
+    query = badQuery;
+    renderExplore(STARS);
+
+    expect(tableNames()).toHaveLength(STARS.length);
+    expect(emptyState()).toBeNull();
+  });
+
+  it('returns to the first page when the star filter narrows the results under a later page', async () => {
+    const many = Array.from({ length: 120 }, (_, i) =>
+      makePlanet({ pl_name: `Planet ${String(i).padStart(3, '0')}`, st_teff: i < 100 ? 5800 : 3000 })
+    );
+    const { user } = renderExplore(many);
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    expect(screen.getByText(/page 2 of 3/i)).toBeInTheDocument();
+
+    await user.click(starBox(/sun-like/i));
+
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
+    expect(resultsCount()).toHaveTextContent('100 of 120 planets');
+  });
+});
+
+describe('ExploreClient results count', () => {
+  it('counts the whole fetched list, not just the page on screen', () => {
+    const many = Array.from({ length: 120 }, (_, i) =>
+      makePlanet({ pl_name: `Planet ${String(i).padStart(3, '0')}` })
+    );
+    renderExplore(many);
+
+    expect(resultsCount()).toHaveTextContent('120 of 120 planets');
+  });
+
+  it('narrows the first number as a filter bites, leaving the total alone', async () => {
+    const { user } = renderExplore();
+    expect(resultsCount()).toHaveTextContent('3 of 3 planets');
+
+    await user.type(searchBox(), 'beta');
+
+    expect(resultsCount()).toHaveTextContent('1 of 3 planets');
+  });
+
+  it('waits for typing to settle before announcing, so it does not read every keystroke', () => {
+    vi.useFakeTimers();
+    renderExplore();
+    expect(announcement()).toHaveTextContent('Showing 3 of 3 planets');
+
+    fireEvent.change(searchBox(), { target: { value: 'beta' } });
+
+    expect(resultsCount()).toHaveTextContent('1 of 3 planets');
+    expect(announcement()).toHaveTextContent('Showing 3 of 3 planets');
+
+    act(() => vi.advanceTimersByTime(1000));
+
+    expect(announcement()).toHaveTextContent('Showing 1 of 3 planets');
+  });
+
+  it('keeps counting while nothing matches, rather than disappearing with the list', async () => {
+    const { user } = renderExplore();
+
+    await user.type(searchBox(), 'no such planet');
+
+    expect(resultsCount()).toHaveTextContent('0 of 3 planets');
+  });
+});
+
+describe('ExploreClient empty results', () => {
+  it.each([
+    ['a search that matches nothing', 'q=no such planet'],
+    ['a range that crosses', 'radius=3..1'],
+    ['a star class no host falls in', 'star=O'],
+  ])('offers a way out of the empty page left by %s', (_label, badQuery) => {
+    query = badQuery;
+    renderExplore();
+
+    expect(emptyState()).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /clear all filters/i })).toBeInTheDocument();
+    expect(screen.queryByRole('table')).toBeNull();
+  });
+
+  it('reaches the grid as well as the table', async () => {
+    query = 'q=no such planet';
+    const { user } = renderExplore();
+
+    await showGrid(user);
+
+    expect(emptyState()).toBeInTheDocument();
+    expect(screen.queryAllByRole('heading', { level: 3 })).toEqual([]);
+  });
+
+  // Nothing is hidden, so offering to clear filters would be a lie.
+  it('does not offer to clear filters when the archive itself came back empty', () => {
+    renderExplore([]);
+
+    expect(screen.getByText(/no planets to show/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /clear all filters/i })).toBeNull();
+    expect(resultsCount()).toHaveTextContent('0 of 0 planets');
+  });
+});
+
+describe('ExploreClient clear all', () => {
+  const EVERYTHING = 'q=beta&method=Transit&star=G&radius=0.5..2&sort=pl_rade.asc';
+
+  it('puts every filter back and strips them from the query string', () => {
+    vi.useFakeTimers();
+    query = EVERYTHING;
+    renderExplore();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear all' }));
+    act(() => vi.advanceTimersByTime(1000));
+
+    expect(replace).toHaveBeenLastCalledWith('/explore?sort=pl_rade.asc', { scroll: false });
+    expect(searchBox()).toHaveValue('');
+    expect(methodBox('Transit')).not.toBeChecked();
+    expect(starBox(/sun-like/i)).not.toBeChecked();
+    expect(boundInput(/radius/i, /min/i)).toHaveValue(null);
+  });
+
+  // `Clear all` stays disabled under a sort alone, so it must not quietly throw one away either.
+  it('leaves the chosen sort standing, since sort is not one of the filters it clears', () => {
+    query = 'q=beta&sort=pl_rade.asc';
+    renderExplore();
+    expect(tableNames()).toEqual(['Beta c']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear all' }));
+
+    expect(tableNames()).toEqual(['Beta c', 'Gamma d', 'Alpha b']);
+    expect(sortHeader(/radius/i)).toHaveTextContent('▲');
+  });
+
+  it('is offered only once something is actually filtered', () => {
+    const { navigateTo } = renderExplore();
+    expect(screen.getByRole('button', { name: 'Clear all' })).toBeDisabled();
+
+    navigateTo('star=G');
+
+    expect(screen.getByRole('button', { name: 'Clear all' })).toBeEnabled();
+  });
+
+  // Both clear buttons stop being focusable the moment they work, so focus needs a real home.
+  it.each([
+    ['the filter control', 'Clear all'],
+    ['the empty state', 'Clear all filters'],
+  ])('moves focus to the search box after clearing from %s', async (_label, name) => {
+    query = 'q=no such planet';
+    const { user } = renderExplore();
+
+    await user.click(screen.getByRole('button', { name }));
+
+    expect(searchBox()).toHaveFocus();
   });
 });

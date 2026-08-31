@@ -37,6 +37,7 @@ export const PLANET_SUMMARY_FIELDS = [
   'pl_rade',
   'pl_bmasse',
   'pl_eqt',
+  'st_teff',
   'esi',
 ] as const;
 

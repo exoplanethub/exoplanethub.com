@@ -13,6 +13,7 @@ const SCORED: PlanetSummary = {
   pl_rade: 1.34,
   pl_bmasse: 2.36,
   pl_eqt: 233,
+  st_teff: 4402,
   esi: 84,
 };
 

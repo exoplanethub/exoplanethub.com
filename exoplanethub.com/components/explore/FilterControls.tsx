@@ -1,15 +1,19 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { RefObject, useMemo, useState } from 'react';
 import { PlanetSummary } from '@/lib/mockPlanets';
 import {
   FilterState,
   RANGE_KEYS,
   RangeKey,
   discoveryMethods,
+  isFiltered,
   measuredExtent,
   withMethod,
   withRange,
+  withStarClass,
 } from '@/lib/planetFilters';
+import { STAR_BANDS } from '@/lib/starBands';
+import CheckboxGroup from './CheckboxGroup';
 import RangeFilter from './RangeFilter';
 import styles from './FilterControls.module.css';
 
@@ -17,6 +21,8 @@ interface FilterControlsProps {
   planets: PlanetSummary[];
   filters: FilterState;
   onChange: (next: FilterState) => void;
+  onClear: () => void;
+  searchRef: RefObject<HTMLInputElement | null>;
 }
 
 const RANGE_COPY: Record<RangeKey, { label: string; unit: string; missingNote: string }> = {
@@ -37,7 +43,18 @@ const RANGE_COPY: Record<RangeKey, { label: string; unit: string; missingNote: s
   },
 };
 
-export default function FilterControls({ planets, filters, onChange }: FilterControlsProps) {
+const STAR_OPTIONS = STAR_BANDS.map(({ starClass, label }) => ({ value: starClass, label }));
+
+const UNCLASSIFIED_NOTE =
+  'Planets whose host star is unclassified — no measured temperature, or cooler than 2,300 K — are hidden.';
+
+export default function FilterControls({
+  planets,
+  filters,
+  onChange,
+  onClear,
+  searchRef,
+}: FilterControlsProps) {
   // Kept apart from the merge below so ticking a box never rescans the whole archive.
   const present = useMemo(() => discoveryMethods(planets), [planets]);
 
@@ -48,8 +65,11 @@ export default function FilterControls({ planets, filters, onChange }: FilterCon
   if (unoffered.length > 0) setEverSelected([...everSelected, ...unoffered]);
 
   // A method the data no longer contains still gets a box, so a shared URL shows what it filters by.
-  const methods = useMemo(
-    () => Array.from(new Set([...present, ...everSelected])).sort(),
+  const methodOptions = useMemo(
+    () =>
+      Array.from(new Set([...present, ...everSelected]))
+        .sort()
+        .map((method) => ({ value: method, label: method })),
     [present, everSelected],
   );
   const extents = useMemo(
@@ -60,6 +80,7 @@ export default function FilterControls({ planets, filters, onChange }: FilterCon
   return (
     <div className={styles.controls}>
       <input
+        ref={searchRef}
         type="text"
         aria-label="Search by planet or host star name"
         placeholder="Search exoplanets..."
@@ -68,23 +89,22 @@ export default function FilterControls({ planets, filters, onChange }: FilterCon
         className={styles.searchInput}
       />
 
-      {methods.length > 0 && (
-        <fieldset className={styles.methods}>
-          <legend className={styles.methodsLegend}>Discovery method</legend>
-          <div className={styles.methodOptions}>
-            {methods.map((method) => (
-              <label key={method} className={styles.method}>
-                <input
-                  type="checkbox"
-                  checked={filters.methods.includes(method)}
-                  onChange={(e) => onChange(withMethod(filters, method, e.target.checked))}
-                />
-                {method}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+      {methodOptions.length > 0 && (
+        <CheckboxGroup
+          legend="Discovery method"
+          options={methodOptions}
+          selected={filters.methods}
+          onToggle={(method, selected) => onChange(withMethod(filters, method, selected))}
+        />
       )}
+
+      <CheckboxGroup
+        legend="Star type"
+        options={STAR_OPTIONS}
+        selected={filters.starClasses}
+        onToggle={(starClass, selected) => onChange(withStarClass(filters, starClass, selected))}
+        note={filters.starClasses.length > 0 ? UNCLASSIFIED_NOTE : undefined}
+      />
 
       <div className={styles.row}>
         {extents.map(({ key, extent }) => (
@@ -97,6 +117,15 @@ export default function FilterControls({ planets, filters, onChange }: FilterCon
           />
         ))}
       </div>
+
+      <button
+        type="button"
+        className={styles.clearAll}
+        onClick={onClear}
+        disabled={!isFiltered(filters)}
+      >
+        Clear all
+      </button>
     </div>
   );
 }
