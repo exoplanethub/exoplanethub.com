@@ -133,6 +133,16 @@ describe('ModalDialog focus trap', () => {
 
     expect(visited).toEqual([...stops, stops[0]]);
   });
+
+  it('holds focus in a dialog that has nothing focusable in it', async () => {
+    const { user, dialog } = await openDialog(<p>Nothing to focus in here.</p>);
+
+    await user.tab();
+    expect(dialog).toHaveFocus();
+
+    await user.tab({ shift: true });
+    expect(dialog).toHaveFocus();
+  });
 });
 
 describe('ModalDialog page locking', () => {

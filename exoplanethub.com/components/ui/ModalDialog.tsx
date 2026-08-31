@@ -38,7 +38,10 @@ export default function ModalDialog({ onClose, labelledBy, className, children }
       if (e.key !== 'Tab' || !dialogRef.current) return;
 
       const stops = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
-      if (stops.length === 0) return;
+      if (stops.length === 0) {
+        e.preventDefault(); // Nowhere to move to, but Tab still must not walk out of the dialog.
+        return;
+      }
 
       const first = stops[0];
       const last = stops[stops.length - 1];
