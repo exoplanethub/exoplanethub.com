@@ -88,10 +88,21 @@ function renderedNames() {
     .map((row) => within(row).getAllByRole('cell')[0].textContent);
 }
 
-// Sort activation lives on the <th> itself today and moves to an inner button once #6 lands.
 function sortControl(name: RegExp) {
-  const header = screen.getByRole('columnheader', { name });
-  return within(header).queryByRole('button') ?? header;
+  return within(screen.getByRole('columnheader', { name })).getByRole('button', { name });
+}
+
+const SORTABLE_COLUMNS: [RegExp, SortKey][] = [
+  [/planet/i, 'pl_name'],
+  [/method/i, 'discoverymethod'],
+  [/radius/i, 'pl_rade'],
+  [/distance/i, 'sy_dist'],
+  [/discovered/i, 'disc_year'],
+  [/esi/i, 'esi'],
+];
+
+function rowTrigger(name: string) {
+  return screen.getByRole('button', { name });
 }
 
 function esiHeader() {
@@ -292,24 +303,70 @@ describe('PlanetTable selection', () => {
 });
 
 describe('PlanetTable accessibility (#6)', () => {
-  // Encodes the open keyboard barrier: both turn red the moment sort headers and rows become operable, forcing these markers out.
-  it.fails('exposes each sort header as a keyboard-activatable control reporting aria-sort', async () => {
+  it('exposes every sortable header as a keyboard-activatable control, not a click-only cell', async () => {
     const user = userEvent.setup();
-    renderTable();
-    const header = screen.getByRole('columnheader', { name: /planet/i });
+    const { onSort } = renderTable();
 
-    await user.click(within(header).getByRole('button'));
+    for (const [column, key] of SORTABLE_COLUMNS) {
+      sortControl(column).focus();
+      await user.keyboard('{Enter}');
 
-    expect(header).toHaveAttribute('aria-sort', 'descending');
+      expect(onSort).toHaveBeenLastCalledWith(key);
+    }
   });
 
-  it.fails('opens a planet row from the keyboard', async () => {
+  it('reports the active column through aria-sort, whichever column it is', () => {
+    const { sortBy } = renderTable();
+
+    for (const [column, key] of SORTABLE_COLUMNS) {
+      sortBy(key, 'desc');
+
+      expect(screen.getByRole('columnheader', { name: column })).toHaveAttribute('aria-sort', 'descending');
+    }
+  });
+
+  it('leaves the unsortable column free of a sort control and of aria-sort', () => {
+    renderTable();
+    const header = screen.getByRole('columnheader', { name: /star/i });
+
+    expect(within(header).queryByRole('button')).not.toBeInTheDocument();
+    expect(header).not.toHaveAttribute('aria-sort');
+  });
+
+  it('opens a planet from the keyboard, naming it so the target is announced', async () => {
     const user = userEvent.setup();
     const { onPlanetClick } = renderTable();
 
-    screen.getAllByRole('row')[1].focus();
+    rowTrigger('Beta c').focus();
     await user.keyboard('{Enter}');
 
     expect(onPlanetClick).toHaveBeenCalledWith(BETA);
+  });
+
+  it('keeps the row a row, so table navigation still works', () => {
+    renderTable();
+
+    expect(screen.getAllByRole('row')).toHaveLength(4);
+    expect(screen.getAllByRole('row')[1]).not.toHaveAttribute('role');
+  });
+
+  it('reports the planet once when its trigger is clicked, not twice via the row', async () => {
+    const user = userEvent.setup();
+    const { onPlanetClick } = renderTable();
+
+    await user.click(rowTrigger('Alpha b'));
+
+    expect(onPlanetClick).toHaveBeenCalledTimes(1);
+    expect(onPlanetClick).toHaveBeenCalledWith(ALPHA);
+  });
+
+  it('still opens a planet when the row is clicked away from its trigger', async () => {
+    const user = userEvent.setup();
+    const { onPlanetClick } = renderTable();
+
+    await user.click(screen.getByText('Ross 128'));
+
+    expect(onPlanetClick).toHaveBeenCalledTimes(1);
+    expect(onPlanetClick).toHaveBeenCalledWith(ALPHA);
   });
 });

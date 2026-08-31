@@ -1,4 +1,5 @@
 'use client';
+import { ReactNode } from 'react';
 import { PlanetSummary } from '@/lib/mockPlanets';
 import { SortKey, SortOrder } from '@/lib/planetFilters';
 import { Pagination } from '@/lib/usePagination';
@@ -14,6 +15,29 @@ interface PlanetTableProps {
   sortKey: SortKey;
   sortOrder: SortOrder;
   onSort: (key: SortKey) => void;
+}
+
+function SortableHeader({ label, column, sortKey, sortOrder, onSort, children }: {
+  label: string;
+  column: SortKey;
+  sortKey: SortKey;
+  sortOrder: SortOrder;
+  onSort: (key: SortKey) => void;
+  children?: ReactNode;
+}) {
+  const active = sortKey === column;
+
+  return (
+    <th aria-sort={active ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <span className={styles.headerContent}>
+        <button className={styles.sortButton} onClick={() => onSort(column)}>
+          {label}
+          {active && <span className={styles.sortIcon} aria-hidden="true">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
+        </button>
+        {children}
+      </span>
+    </th>
+  );
 }
 
 function ESIScore({ score }: { score: number | undefined }) {
@@ -39,7 +63,7 @@ function ESIScore({ score }: { score: number | undefined }) {
 export default function PlanetTable({ planets, pagination, onPlanetClick, sortKey, sortOrder, onSort }: PlanetTableProps) {
   const { pageItems } = pagination;
 
-  const esiAriaSort = sortKey !== 'esi' ? 'none' : sortOrder === 'asc' ? 'ascending' : 'descending';
+  const sortProps = { sortKey, sortOrder, onSort };
 
   const paginatedPlanets = pageItems(planets);
 
@@ -49,36 +73,32 @@ export default function PlanetTable({ planets, pagination, onPlanetClick, sortKe
         <table className={styles.table}>
           <thead>
             <tr>
-              <th onClick={() => onSort('pl_name')}>
-                Planet {sortKey === 'pl_name' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
-              </th>
+              <SortableHeader label="Planet" column="pl_name" {...sortProps} />
               <th>Star</th>
-              <th onClick={() => onSort('discoverymethod')}>
-                Method {sortKey === 'discoverymethod' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
-              </th>
-              <th onClick={() => onSort('pl_rade')}>
-                Radius {sortKey === 'pl_rade' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
-              </th>
-              <th onClick={() => onSort('sy_dist')}>
-                Distance {sortKey === 'sy_dist' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
-              </th>
-              <th onClick={() => onSort('disc_year')}>
-                Discovered {sortKey === 'disc_year' && <span className={styles.sortIcon}>{sortOrder === 'asc' ? '▲' : '▼'}</span>}
-              </th>
-              <th className={styles.esiHeader} aria-sort={esiAriaSort}>
-                <span className={styles.esiHeaderContent}>
-                  <button className={styles.sortButton} onClick={() => onSort('esi')}>
-                    ESI {sortKey === 'esi' && <span className={styles.sortIcon} aria-hidden="true">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
-                  </button>
-                  <ESIInfoButton />
-                </span>
-              </th>
+              <SortableHeader label="Method" column="discoverymethod" {...sortProps} />
+              <SortableHeader label="Radius" column="pl_rade" {...sortProps} />
+              <SortableHeader label="Distance" column="sy_dist" {...sortProps} />
+              <SortableHeader label="Discovered" column="disc_year" {...sortProps} />
+              <SortableHeader label="ESI" column="esi" {...sortProps}>
+                <ESIInfoButton />
+              </SortableHeader>
             </tr>
           </thead>
           <tbody>
             {paginatedPlanets.map((planet) => (
               <tr key={planet.pl_name} onClick={() => onPlanetClick(planet)}>
-                <td className={styles.planetName}>{planet.pl_name}</td>
+                <td className={styles.planetName}>
+                  {/* A button, not a focusable row: role="button" on a <tr> strips the row semantics screen readers navigate tables with. */}
+                  <button
+                    className={styles.rowButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPlanetClick(planet);
+                    }}
+                  >
+                    {planet.pl_name}
+                  </button>
+                </td>
                 <td>{planet.hostname || 'N/A'}</td>
                 <td>{planet.discoverymethod || 'N/A'}</td>
                 <td>{planet.pl_rade ? planet.pl_rade.toFixed(2) : 'N/A'}× Earth</td>
