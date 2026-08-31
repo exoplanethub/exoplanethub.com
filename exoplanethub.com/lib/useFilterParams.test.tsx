@@ -26,7 +26,7 @@ function Harness() {
   return (
     <>
       <button onClick={() => bump((n) => n + 1)}>rerender</button>
-      <output data-testid="state">{`${filters.q}|${filters.method ?? '-'}|${filters.sortKey}.${filters.sortOrder}`}</output>
+      <output data-testid="state">{`${filters.q}|${filters.methods.join(',') || '-'}|${filters.sortKey}.${filters.sortOrder}`}</output>
       <button onClick={() => update({ ...filters, q: 'wolf' })}>search wolf</button>
       <button onClick={() => update({ ...filters, q: 'ross' })}>search ross</button>
       <button onClick={() => update({ ...filters, q: 'wolf 3' })}>search wolf 3</button>

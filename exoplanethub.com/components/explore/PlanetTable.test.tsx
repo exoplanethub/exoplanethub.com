@@ -154,20 +154,11 @@ describe('PlanetTable rendering', () => {
 });
 
 describe('PlanetTable sorting', () => {
-  it('sorts by discovery year descending before any interaction', () => {
-    renderTable();
+  // Ordering belongs to ExploreClient so both views share it; the table renders what it is handed.
+  it('renders the rows in the order it was handed rather than ordering them itself', () => {
+    renderTable({ planets: [GAMMA, ALPHA, BETA], sortKey: 'pl_name', sortOrder: 'asc' });
 
-    expect(renderedNames()).toEqual(['Beta c', 'Alpha b', 'Gamma d']);
-  });
-
-  it('orders rows by the sort it is handed, in both directions', () => {
-    const { sortBy } = renderTable();
-
-    sortBy('pl_name', 'desc');
-    expect(renderedNames()).toEqual(['Gamma d', 'Beta c', 'Alpha b']);
-
-    sortBy('pl_name', 'asc');
-    expect(renderedNames()).toEqual(['Alpha b', 'Beta c', 'Gamma d']);
+    expect(renderedNames()).toEqual(['Gamma d', 'Alpha b', 'Beta c']);
   });
 
   // The owner of the sort state decides the next direction; the table only reports which column was asked for.
@@ -178,47 +169,6 @@ describe('PlanetTable sorting', () => {
     await user.click(sortControl(/planet/i));
 
     expect(onSort).toHaveBeenCalledWith('pl_name');
-  });
-
-  it('sorts planets with no measurement last in both directions', () => {
-    const { sortBy } = renderTable({
-      planets: [
-        makePlanet({ pl_name: 'Unmeasured', pl_rade: null }),
-        makePlanet({ pl_name: 'Small', pl_rade: 1 }),
-        makePlanet({ pl_name: 'Large', pl_rade: 9 }),
-      ],
-    });
-
-    sortBy('pl_rade', 'desc');
-    expect(renderedNames()).toEqual(['Large', 'Small', 'Unmeasured']);
-
-    sortBy('pl_rade', 'asc');
-    expect(renderedNames()).toEqual(['Small', 'Large', 'Unmeasured']);
-  });
-
-  it('sorts numerically rather than lexicographically', () => {
-    const { sortBy } = renderTable({
-      planets: [
-        makePlanet({ pl_name: 'Nine', sy_dist: 9 }),
-        makePlanet({ pl_name: 'Eighty', sy_dist: 80 }),
-        makePlanet({ pl_name: 'Hundred', sy_dist: 100 }),
-      ],
-    });
-
-    sortBy('sy_dist', 'desc');
-
-    expect(renderedNames()).toEqual(['Hundred', 'Eighty', 'Nine']);
-  });
-
-  // Ordered by a key whose result differs from the source order, or in-place sorting looks identical.
-  it('leaves the list it was handed untouched while ordering it', () => {
-    const planets = [ALPHA, BETA, GAMMA];
-    const { sortBy } = renderTable({ planets });
-
-    sortBy('disc_year', 'asc');
-
-    expect(renderedNames()).toEqual(['Gamma d', 'Alpha b', 'Beta c']);
-    expect(planets).toEqual([ALPHA, BETA, GAMMA]);
   });
 });
 
@@ -242,16 +192,6 @@ describe('PlanetTable ESI column', () => {
 
     expect(esiCell(1)).toHaveTextContent('0');
     expect(esiCell(1)).not.toHaveTextContent('Not scored');
-  });
-
-  it('sorts unscored planets last in both directions, with a real 0 ranked among the scored', () => {
-    const { sortBy } = renderTable({ planets: [UNSCORED, MIDDLING, ZERO, SCORED] });
-
-    sortBy('esi', 'desc');
-    expect(renderedNames()).toEqual(['Scored', 'Middling', 'Zero', 'Unscored']);
-
-    sortBy('esi', 'asc');
-    expect(renderedNames()).toEqual(['Zero', 'Middling', 'Scored', 'Unscored']);
   });
 
   it('reports its sort state through aria-sort in both directions', () => {
@@ -311,7 +251,7 @@ describe('PlanetTable pagination', () => {
   it('shows only the current page and reports the unpaginated total', () => {
     renderTable({ itemsPerPage: 2 });
 
-    expect(renderedNames()).toEqual(['Beta c', 'Alpha b']);
+    expect(renderedNames()).toEqual(['Alpha b', 'Beta c']);
     expect(screen.getByText(/page 1 of 2 \(3 planets\)/i)).toBeInTheDocument();
   });
 

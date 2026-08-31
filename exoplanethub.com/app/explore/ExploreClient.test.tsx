@@ -79,6 +79,12 @@ function boundInput(name: RegExp, edge: RegExp) {
   return rangeGroup(name).getByRole('spinbutton', { name: edge });
 }
 
+function methodBox(name: string) {
+  return within(screen.getByRole('group', { name: /discovery method/i })).getByRole('checkbox', {
+    name,
+  });
+}
+
 async function showGrid(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Grid' }));
 }
@@ -120,19 +126,48 @@ describe('ExploreClient filtering', () => {
     expect(cardNames()).toEqual(['Beta c']);
   });
 
-  // Whatever the URL asks for is what gets filtered, so the select has to be able to say so.
-  it('shows a method the data does not contain rather than mislabelling it "All Types"', () => {
+  // Whatever the URL asks for is what gets filtered, so the checkboxes have to be able to say so.
+  it('offers a box for a method the data does not contain, checked, rather than hiding it', () => {
     query = 'method=Astrometry';
     renderExplore();
 
-    expect(screen.getByRole('combobox', { name: /discovery method/i })).toHaveValue('Astrometry');
+    expect(methodBox('Astrometry')).toBeChecked();
     expect(tableNames()).toEqual([]);
   });
 
   it('offers the discovery methods present in the data and applies the chosen one', async () => {
     const { user } = renderExplore();
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /discovery method/i }), 'Radial Velocity');
+    expect(methodBox('Transit')).not.toBeChecked();
+    await user.click(methodBox('Radial Velocity'));
+
+    expect(tableNames()).toEqual(['Beta c']);
+  });
+
+  it('widens rather than narrows the results as more methods are ticked', async () => {
+    const { user } = renderExplore();
+
+    await user.click(methodBox('Radial Velocity'));
+    expect(tableNames()).toEqual(['Beta c']);
+
+    await user.click(methodBox('Transit'));
+    expect(tableNames()).toEqual(['Beta c', 'Alpha b', 'Gamma d']);
+  });
+
+  it('restores every ticked method from a shared URL', () => {
+    query = 'method=Radial%20Velocity,Transit';
+    renderExplore();
+
+    expect(methodBox('Radial Velocity')).toBeChecked();
+    expect(methodBox('Transit')).toBeChecked();
+    expect(tableNames()).toEqual(['Beta c', 'Alpha b', 'Gamma d']);
+  });
+
+  it('drops a method the visitor unticks from the results', async () => {
+    query = 'method=Radial%20Velocity,Transit';
+    const { user } = renderExplore();
+
+    await user.click(methodBox('Transit'));
 
     expect(tableNames()).toEqual(['Beta c']);
   });
@@ -170,6 +205,23 @@ describe('ExploreClient URL state', () => {
     expect(replace).toHaveBeenLastCalledWith('/explore', { scroll: false });
   });
 
+  it('writes every ticked method to one comma-separated param', () => {
+    vi.useFakeTimers();
+    renderExplore();
+
+    fireEvent.click(methodBox('Transit'));
+    vi.advanceTimersByTime(1000);
+    expect(replace).toHaveBeenLastCalledWith('/explore?method=Transit', { scroll: false });
+
+    fireEvent.click(methodBox('Radial Velocity'));
+    vi.advanceTimersByTime(1000);
+    expect(replace).toHaveBeenLastCalledWith('/explore?method=Radial+Velocity%2CTransit', { scroll: false });
+
+    fireEvent.click(methodBox('Transit'));
+    vi.advanceTimersByTime(1000);
+    expect(replace).toHaveBeenLastCalledWith('/explore?method=Radial+Velocity', { scroll: false });
+  });
+
   it('keeps the sort indicator on the column the rows are actually ordered by after Back', () => {
     query = 'sort=pl_rade.asc';
     const { navigateTo } = renderExplore();
@@ -191,6 +243,39 @@ describe('ExploreClient URL state', () => {
     renderExplore();
 
     expect(tableNames()).toEqual(['Beta c', 'Alpha b', 'Gamma d']);
+  });
+});
+
+describe('ExploreClient shared ordering', () => {
+  // 120 planets whose alphabetical order is the reverse of their discovery order, so a page of
+  // one ordering can never coincidentally match the same page of the other.
+  const many = Array.from({ length: 120 }, (_, i) =>
+    makePlanet({ pl_name: `Planet ${String(119 - i).padStart(3, '0')}`, disc_year: 2000 + i })
+  );
+
+  it('orders the grid by ?sort=, which it used to ignore', async () => {
+    query = 'sort=pl_name.asc';
+    const { user } = renderExplore(many);
+    await showGrid(user);
+
+    expect(cardNames()!.slice(0, 3)).toEqual(['Planet 000', 'Planet 001', 'Planet 002']);
+  });
+
+  // The promise a shared URL makes: the recipient sees the set the sender saw, in that order.
+  it.each([
+    ['the default sort', ''],
+    ['a sort the URL asks for', 'sort=pl_name.asc'],
+    ['a sort applied over a filter', 'q=Planet 0&sort=pl_name.asc'],
+  ])('shows the same planets on grid page 2 as on table page 2 under %s', async (_label, shared) => {
+    query = shared;
+    const { user } = renderExplore(many);
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    const fromTable = tableNames();
+
+    await showGrid(user);
+
+    expect(fromTable).toHaveLength(50);
+    expect(cardNames()).toEqual(fromTable);
   });
 });
 

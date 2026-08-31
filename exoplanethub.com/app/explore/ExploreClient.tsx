@@ -5,7 +5,7 @@ import PlanetTable from '@/components/explore/PlanetTable';
 import PlanetModal from '@/components/explore/PlanetModal';
 import FilterControls from '@/components/explore/FilterControls';
 import { PlanetSummary } from '@/lib/mockPlanets';
-import { FilterState, SortKey, applyFilters, withSort } from '@/lib/planetFilters';
+import { FilterState, SortKey, applyFilters, sortPlanets, withSort } from '@/lib/planetFilters';
 import { useFilterParams } from '@/lib/useFilterParams';
 import { usePagination } from '@/lib/usePagination';
 import styles from './page.module.css';
@@ -17,8 +17,11 @@ export default function ExploreClient({ planets }: { planets: PlanetSummary[] })
   const [view, setView] = useState<'grid' | 'table'>('table');
   const [filters, setFilters] = useFilterParams();
 
-  const filtered = useMemo(() => applyFilters(planets, filters), [planets, filters]);
-  const pagination = usePagination(filtered.length, ITEMS_PER_PAGE);
+  const visible = useMemo(
+    () => sortPlanets(applyFilters(planets, filters), filters),
+    [planets, filters],
+  );
+  const pagination = usePagination(visible.length, ITEMS_PER_PAGE);
   const { page, totalPages, goTo, pageItems } = pagination;
 
   const changeFilters = (next: FilterState) => {
@@ -54,7 +57,7 @@ export default function ExploreClient({ planets }: { planets: PlanetSummary[] })
 
         {view === 'grid' ? (
           <div className={styles.grid}>
-            {pageItems(filtered).map((planet) => (
+            {pageItems(visible).map((planet) => (
               <PlanetCard 
                 key={planet.pl_name} 
                 planet={planet} 
@@ -64,7 +67,7 @@ export default function ExploreClient({ planets }: { planets: PlanetSummary[] })
           </div>
         ) : (
           <PlanetTable 
-            planets={filtered}
+            planets={visible}
             pagination={pagination}
             onPlanetClick={setSelectedPlanet}
             sortKey={filters.sortKey}

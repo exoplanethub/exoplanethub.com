@@ -1,5 +1,5 @@
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { PlanetSummary } from '@/lib/mockPlanets';
 import {
   FilterState,
@@ -7,6 +7,7 @@ import {
   RangeKey,
   discoveryMethods,
   measuredExtent,
+  withMethod,
   withRange,
 } from '@/lib/planetFilters';
 import RangeFilter from './RangeFilter';
@@ -17,8 +18,6 @@ interface FilterControlsProps {
   filters: FilterState;
   onChange: (next: FilterState) => void;
 }
-
-const ANY_METHOD = 'all';
 
 const RANGE_COPY: Record<RangeKey, { label: string; unit: string; missingNote: string }> = {
   radius: {
@@ -39,43 +38,53 @@ const RANGE_COPY: Record<RangeKey, { label: string; unit: string; missingNote: s
 };
 
 export default function FilterControls({ planets, filters, onChange }: FilterControlsProps) {
-  const methods = useMemo(() => discoveryMethods(planets), [planets]);
+  // Kept apart from the merge below so ticking a box never rescans the whole archive.
+  const present = useMemo(() => discoveryMethods(planets), [planets]);
+
+  // Deriving the boxes from the selection they mutate would unmount one mid-click, dropping the
+  // visitor's focus on <body>, so a method stays on offer for the rest of the mount once selected.
+  const [everSelected, setEverSelected] = useState(filters.methods);
+  const unoffered = filters.methods.filter((method) => !everSelected.includes(method));
+  if (unoffered.length > 0) setEverSelected([...everSelected, ...unoffered]);
+
+  // A method the data no longer contains still gets a box, so a shared URL shows what it filters by.
+  const methods = useMemo(
+    () => Array.from(new Set([...present, ...everSelected])).sort(),
+    [present, everSelected],
+  );
   const extents = useMemo(
     () => RANGE_KEYS.map((key) => ({ key, extent: measuredExtent(planets, key) })),
     [planets],
   );
 
-  // Without an option of its own an unknown method shows as the first one: "All Types" over nothing.
-  const options =
-    filters.method && !methods.includes(filters.method) ? [filters.method, ...methods] : methods;
-
   return (
     <div className={styles.controls}>
-      <div className={styles.row}>
-        <input
-          type="text"
-          aria-label="Search by planet or host star name"
-          placeholder="Search exoplanets..."
-          value={filters.q}
-          onChange={(e) => onChange({ ...filters, q: e.target.value })}
-          className={styles.searchInput}
-        />
-        <select
-          aria-label="Filter by discovery method"
-          value={filters.method ?? ANY_METHOD}
-          onChange={(e) =>
-            onChange({ ...filters, method: e.target.value === ANY_METHOD ? null : e.target.value })
-          }
-          className={styles.select}
-        >
-          <option value={ANY_METHOD}>All Types</option>
-          {options.map((method) => (
-            <option key={method} value={method}>
-              {method}
-            </option>
-          ))}
-        </select>
-      </div>
+      <input
+        type="text"
+        aria-label="Search by planet or host star name"
+        placeholder="Search exoplanets..."
+        value={filters.q}
+        onChange={(e) => onChange({ ...filters, q: e.target.value })}
+        className={styles.searchInput}
+      />
+
+      {methods.length > 0 && (
+        <fieldset className={styles.methods}>
+          <legend className={styles.methodsLegend}>Discovery method</legend>
+          <div className={styles.methodOptions}>
+            {methods.map((method) => (
+              <label key={method} className={styles.method}>
+                <input
+                  type="checkbox"
+                  checked={filters.methods.includes(method)}
+                  onChange={(e) => onChange(withMethod(filters, method, e.target.checked))}
+                />
+                {method}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       <div className={styles.row}>
         {extents.map(({ key, extent }) => (

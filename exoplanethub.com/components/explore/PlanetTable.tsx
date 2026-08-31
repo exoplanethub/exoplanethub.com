@@ -1,5 +1,4 @@
 'use client';
-import { useMemo } from 'react';
 import { PlanetSummary } from '@/lib/mockPlanets';
 import { SortKey, SortOrder } from '@/lib/planetFilters';
 import { Pagination } from '@/lib/usePagination';
@@ -14,24 +13,6 @@ interface PlanetTableProps {
   sortKey: SortKey;
   sortOrder: SortOrder;
   onSort: (key: SortKey) => void;
-}
-
-type SortValue = PlanetSummary[SortKey];
-
-// Unmeasured planets sort last in both directions: null coerces to 0 under <, which would
-// otherwise rank every planet NASA has no value for ahead of the real measurements.
-function compareSortValues(a: SortValue, b: SortValue, order: SortOrder): number {
-  if (a == null || b == null) return a == null && b == null ? 0 : a == null ? 1 : -1;
-
-  const direction = order === 'asc' ? 1 : -1;
-
-  if (typeof a === 'string' && typeof b === 'string') {
-    const left = a.toLowerCase();
-    const right = b.toLowerCase();
-    return left === right ? 0 : (left < right ? -1 : 1) * direction;
-  }
-
-  return (Number(a) - Number(b)) * direction;
 }
 
 function ESIScore({ score }: { score: number | undefined }) {
@@ -56,14 +37,10 @@ function ESIScore({ score }: { score: number | undefined }) {
 
 export default function PlanetTable({ planets, pagination, onPlanetClick, sortKey, sortOrder, onSort }: PlanetTableProps) {
   const { page, totalPages, goTo, pageItems } = pagination;
-  const sorted = useMemo(
-    () => [...planets].sort((a, b) => compareSortValues(a[sortKey], b[sortKey], sortOrder)),
-    [planets, sortKey, sortOrder],
-  );
 
   const esiAriaSort = sortKey !== 'esi' ? 'none' : sortOrder === 'asc' ? 'ascending' : 'descending';
 
-  const paginatedPlanets = pageItems(sorted);
+  const paginatedPlanets = pageItems(planets);
 
   return (
     <>

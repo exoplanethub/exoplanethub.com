@@ -10,6 +10,8 @@ import {
   measuredExtent,
   parseFilters,
   serializeFilters,
+  sortPlanets,
+  withMethod,
   withRange,
   withSort,
 } from '@/lib/planetFilters';
@@ -45,7 +47,7 @@ describe('parseFilters', () => {
     expect(parse('q=kepler&method=Transit&sort=pl_rade.asc')).toEqual({
       ...DEFAULT_FILTERS,
       q: 'kepler',
-      method: 'Transit',
+      methods: ['Transit'],
       sortKey: 'pl_rade',
       sortOrder: 'asc',
     });
@@ -62,7 +64,27 @@ describe('parseFilters', () => {
   });
 
   it('treats an empty or absent value as an inactive filter', () => {
-    expect(parse('q=&method=')).toMatchObject({ q: '', method: null });
+    expect(parse('q=&method=')).toMatchObject({ q: '', methods: [] });
+  });
+
+  it('reads a comma-separated method list', () => {
+    expect(parse('method=Radial%20Velocity,Transit')).toMatchObject({
+      methods: ['Radial Velocity', 'Transit'],
+    });
+  });
+
+  it('normalises the order the URL gave, so one set of methods has exactly one URL', () => {
+    expect(parse('method=Transit,Astrometry')).toEqual(parse('method=Astrometry,Transit'));
+    expect(serializeFilters(parse('method=Transit,Astrometry'))).toBe('method=Astrometry%2CTransit');
+  });
+
+  it.each([
+    ['empty entries', 'method=Transit,,Imaging', ['Imaging', 'Transit']],
+    ['padding around each name', 'method=%20Transit%20,%20Imaging%20', ['Imaging', 'Transit']],
+    ['a repeated method', 'method=Transit,Imaging,Transit', ['Imaging', 'Transit']],
+    ['a list of nothing but separators', 'method=,,', []],
+  ])('drops %s rather than filtering on them', (_label, query, expected) => {
+    expect(parse(query)).toMatchObject({ methods: expected });
   });
 
   it('ignores params it does not recognise', () => {
@@ -144,7 +166,8 @@ describe('serializeFilters', () => {
   it.each([
     ['the default view', DEFAULT_FILTERS],
     ['a search', { ...DEFAULT_FILTERS, q: 'kepler 186' }],
-    ['a method', { ...DEFAULT_FILTERS, method: 'Radial Velocity' }],
+    ['a method', { ...DEFAULT_FILTERS, methods: ['Radial Velocity'] }],
+    ['several methods', { ...DEFAULT_FILTERS, methods: ['Imaging', 'Radial Velocity', 'Transit'] }],
     ['a non-default sort', { ...DEFAULT_FILTERS, sortKey: 'esi' as const, sortOrder: 'asc' as const }],
     ['a range bounded at both ends', withRange(DEFAULT_FILTERS, 'radius', { min: 0.5, max: 2 })],
     ['a range open at the top', withRange(DEFAULT_FILTERS, 'mass', { min: 10, max: null })],
@@ -156,7 +179,7 @@ describe('serializeFilters', () => {
       {
         ...withRange(withRange(DEFAULT_FILTERS, 'radius', { min: 0.5, max: 2 }), 'period', { min: null, max: 365 }),
         q: 'wolf',
-        method: 'Transit',
+        methods: ['Transit'],
         sortKey: 'sy_dist' as const,
         sortOrder: 'asc' as const,
       },
@@ -198,10 +221,40 @@ describe('withSort', () => {
   });
 
   it('leaves the other filters alone', () => {
-    expect(withSort({ ...DEFAULT_FILTERS, q: 'wolf', method: 'Transit' }, 'esi')).toMatchObject({
+    expect(withSort({ ...DEFAULT_FILTERS, q: 'wolf', methods: ['Transit'] }, 'esi')).toMatchObject({
       q: 'wolf',
-      method: 'Transit',
+      methods: ['Transit'],
     });
+  });
+});
+
+describe('withMethod', () => {
+  it('adds and removes one method without disturbing the others', () => {
+    const one = withMethod(DEFAULT_FILTERS, 'Transit', true);
+
+    expect(withMethod(one, 'Imaging', true).methods).toEqual(['Imaging', 'Transit']);
+    expect(withMethod(withMethod(one, 'Imaging', true), 'Transit', false).methods).toEqual(['Imaging']);
+  });
+
+  it('orders the selection so click order cannot produce two URLs for one set', () => {
+    const clickedInOrder = withMethod(withMethod(DEFAULT_FILTERS, 'Imaging', true), 'Transit', true);
+    const clickedInReverse = withMethod(withMethod(DEFAULT_FILTERS, 'Transit', true), 'Imaging', true);
+
+    expect(serializeFilters(clickedInOrder)).toBe(serializeFilters(clickedInReverse));
+  });
+
+  it('never selects the same method twice', () => {
+    expect(withMethod(withMethod(DEFAULT_FILTERS, 'Transit', true), 'Transit', true).methods).toEqual(['Transit']);
+  });
+
+  it('deselecting a method that was never selected is a no-op', () => {
+    expect(withMethod(DEFAULT_FILTERS, 'Transit', false).methods).toEqual([]);
+  });
+
+  it('leaves the other filters alone', () => {
+    const state = withMethod({ ...DEFAULT_FILTERS, q: 'wolf', sortKey: 'esi' }, 'Transit', true);
+
+    expect(state).toMatchObject({ q: 'wolf', sortKey: 'esi' });
   });
 });
 
@@ -237,11 +290,25 @@ describe('applyFilters', () => {
   });
 
   it('filters by discovery method', () => {
-    expect(names({ method: 'Radial Velocity' })).toEqual(['Beta c']);
+    expect(names({ methods: ['Radial Velocity'] })).toEqual(['Beta c']);
+  });
+
+  it('takes the union of several methods rather than the intersection', () => {
+    expect(names({ methods: ['Radial Velocity', 'Transit'] })).toEqual(['Alpha b', 'Beta c', 'Gamma d']);
+  });
+
+  it('still returns the methods it recognises when the URL also names one the data lacks', () => {
+    expect(names({ methods: ['Astrometry', 'Radial Velocity'] })).toEqual(['Beta c']);
+  });
+
+  it('leaves out planets the archive gives no method for', () => {
+    const unknown = makePlanet({ pl_name: 'Nameless', discoverymethod: null });
+
+    expect(applyFilters([ALPHA, unknown], { ...DEFAULT_FILTERS, methods: ['Transit'] })).toEqual([ALPHA]);
   });
 
   it('requires a planet to satisfy every active filter', () => {
-    expect(names({ q: 'beta', method: 'Transit' })).toEqual([]);
+    expect(names({ q: 'beta', methods: ['Transit'] })).toEqual([]);
   });
 });
 
@@ -355,6 +422,68 @@ describe('measuredExtent', () => {
 
   it('reports no extent for an empty archive', () => {
     expect(measuredExtent([], 'radius')).toEqual({ min: null, max: null });
+  });
+});
+
+describe('sortPlanets', () => {
+  function ordered(planets: PlanetSummary[], sortKey: FilterState['sortKey'], sortOrder: FilterState['sortOrder']) {
+    return sortPlanets(planets, { ...DEFAULT_FILTERS, sortKey, sortOrder }).map((planet) => planet.pl_name);
+  }
+
+  const BY_YEAR = [
+    makePlanet({ pl_name: 'Older', disc_year: 2008 }),
+    makePlanet({ pl_name: 'Newer', disc_year: 2021 }),
+  ];
+
+  it('orders by the key and direction it is given', () => {
+    expect(ordered(BY_YEAR, 'disc_year', 'desc')).toEqual(['Newer', 'Older']);
+    expect(ordered(BY_YEAR, 'disc_year', 'asc')).toEqual(['Older', 'Newer']);
+  });
+
+  it('compares names case insensitively', () => {
+    const planets = [makePlanet({ pl_name: 'beta' }), makePlanet({ pl_name: 'Alpha' })];
+
+    expect(ordered(planets, 'pl_name', 'asc')).toEqual(['Alpha', 'beta']);
+  });
+
+  it('ranks planets the archive never measured last in both directions', () => {
+    const planets = [
+      makePlanet({ pl_name: 'Unmeasured', pl_rade: null }),
+      makePlanet({ pl_name: 'Small', pl_rade: 1 }),
+      makePlanet({ pl_name: 'Large', pl_rade: 9 }),
+    ];
+
+    expect(ordered(planets, 'pl_rade', 'desc')).toEqual(['Large', 'Small', 'Unmeasured']);
+    expect(ordered(planets, 'pl_rade', 'asc')).toEqual(['Small', 'Large', 'Unmeasured']);
+  });
+
+  it('compares numbers numerically rather than lexicographically', () => {
+    const planets = [
+      makePlanet({ pl_name: 'Nine', pl_rade: 9 }),
+      makePlanet({ pl_name: 'Eighty', pl_rade: 80 }),
+    ];
+
+    expect(ordered(planets, 'pl_rade', 'asc')).toEqual(['Nine', 'Eighty']);
+  });
+
+  it('ranks an unscored planet last but a real zero among the scored', () => {
+    const planets = [
+      makePlanet({ pl_name: 'Unscored' }),
+      makePlanet({ pl_name: 'Middling', esi: 55 }),
+      makePlanet({ pl_name: 'Zero', esi: 0 }),
+      makePlanet({ pl_name: 'Scored', esi: 92 }),
+    ];
+
+    expect(ordered(planets, 'esi', 'desc')).toEqual(['Scored', 'Middling', 'Zero', 'Unscored']);
+    expect(ordered(planets, 'esi', 'asc')).toEqual(['Zero', 'Middling', 'Scored', 'Unscored']);
+  });
+
+  it('leaves the list it was handed untouched', () => {
+    const planets = [BETA, ALPHA];
+
+    sortPlanets(planets, { ...DEFAULT_FILTERS, sortKey: 'pl_name', sortOrder: 'asc' });
+
+    expect(planets.map((planet) => planet.pl_name)).toEqual(['Beta c', 'Alpha b']);
   });
 });
 
