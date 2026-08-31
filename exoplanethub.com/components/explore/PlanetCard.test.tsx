@@ -36,4 +36,11 @@ describe('PlanetCard', () => {
     expect(screen.getByRole('heading', { name: 'Kepler-442 b' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Learn More' })).toBeInTheDocument();
   });
+
+  // The emoji stands in for planet imagery; announcing "ringed planet" says nothing about this planet.
+  it('hides the decorative planet glyph from assistive tech', () => {
+    renderCard(SCORED);
+
+    expect(screen.getByText('🪐')).toHaveAttribute('aria-hidden', 'true');
+  });
 });

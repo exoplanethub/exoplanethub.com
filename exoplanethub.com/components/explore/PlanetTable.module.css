@@ -54,13 +54,8 @@
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  cursor: pointer;
   user-select: none;
   white-space: nowrap;
-}
-
-.table th:hover {
-  color: var(--color-primary);
 }
 
 .table td {
@@ -84,18 +79,25 @@
   color: var(--color-text);
 }
 
-.esiHeaderContent {
+.rowButton {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rowButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.headerContent {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-
-.table th.esiHeader {
-  cursor: default;
-}
-
-.table th.esiHeader:hover {
-  color: var(--color-text-muted);
 }
 
 .sortButton {

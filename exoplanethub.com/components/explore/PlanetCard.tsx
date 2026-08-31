@@ -12,7 +12,7 @@ export default function PlanetCard({ planet, onClick }: PlanetCardProps) {
   return (
     <div className={styles.card}>
       <div className={styles.imageContainer}>
-        <div className={styles.imagePlaceholder}>🪐</div>
+        <div className={styles.imagePlaceholder} aria-hidden="true">🪐</div>
         <ESIBadge score={planet.esi} />
       </div>
       
