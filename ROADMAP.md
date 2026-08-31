@@ -1,6 +1,14 @@
 # Roadmap
 
-## Current Focus
+## Direction
+
+ExoplanetHub is an archive first: a complete, queryable, shareable view of NASA's confirmed
+exoplanets. What the site presents as new is derived from the scheduled sync's diff against the
+archive, never hand-written. Today that is the latest-confirmations feed; retractions and records
+broken follow from the same diff. There is no blog and no editorial pipeline; if the data does not
+say it, the site does not claim it.
+
+## Shipped
 
 ### 1. Earth-Similarity Index (ESI) Badge & Sorting
 Add visual indicators and sorting for planets most similar to Earth based on radius, density, and temperature.
@@ -20,14 +28,16 @@ Highlight recently confirmed exoplanets on the homepage.
 - Add to homepage with last 10 discoveries
 - Include discovery method and date
 
-### 3. Improve Advanced Filters
-Enhance filtering capabilities for power users.
+### 3. Explore Filters
+Narrow the archive by name, size, orbit and star type, and keep the result in the address bar so any
+view can be shared, bookmarked and reloaded unchanged.
 
 **Tasks:**
-- Add range sliders for mass, radius, orbital period
+- Search by planet or host name
+- Range filters for radius, mass and orbital period
 - Multi-select for discovery methods
-- Filter by stellar type
-- Persist filter state in URL params
+- Filter by star type
+- Persist all filter and sort state in URL params
 
 ## Future Ideas
 

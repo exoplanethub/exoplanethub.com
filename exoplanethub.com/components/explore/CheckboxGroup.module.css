@@ -1,0 +1,53 @@
+.group {
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.legend {
+  padding: 0 0 8px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  color: var(--color-text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.option input {
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.option:hover,
+.option:has(input:checked) {
+  border-color: var(--color-primary);
+}
+
+.option:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.note {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin-top: 8px;
+}

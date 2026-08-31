@@ -1,36 +1,20 @@
 'use client';
-import { ReactNode, useState, useMemo } from 'react';
+import { ReactNode } from 'react';
 import { PlanetSummary } from '@/lib/mockPlanets';
+import { SortKey, SortOrder } from '@/lib/planetFilters';
+import { Pagination } from '@/lib/usePagination';
 import ESIInfoButton from './ESIInfoButton';
+import PaginationControls from './PaginationControls';
 import { getESIBand } from './esiBands';
 import styles from './PlanetTable.module.css';
 
 interface PlanetTableProps {
   planets: PlanetSummary[];
-  page: number;
-  itemsPerPage: number;
-  onPageChange: (page: number) => void;
+  pagination: Pagination;
   onPlanetClick: (planet: PlanetSummary) => void;
-}
-
-type SortKey = 'pl_name' | 'sy_dist' | 'pl_rade' | 'discoverymethod' | 'disc_year' | 'esi';
-type SortOrder = 'asc' | 'desc';
-type SortValue = PlanetSummary[SortKey];
-
-// Unmeasured planets sort last in both directions: null coerces to 0 under <, which would
-// otherwise rank every planet NASA has no value for ahead of the real measurements.
-function compareSortValues(a: SortValue, b: SortValue, order: SortOrder): number {
-  if (a == null || b == null) return a == null && b == null ? 0 : a == null ? 1 : -1;
-
-  const direction = order === 'asc' ? 1 : -1;
-
-  if (typeof a === 'string' && typeof b === 'string') {
-    const left = a.toLowerCase();
-    const right = b.toLowerCase();
-    return left === right ? 0 : (left < right ? -1 : 1) * direction;
-  }
-
-  return (Number(a) - Number(b)) * direction;
+  sortKey: SortKey;
+  sortOrder: SortOrder;
+  onSort: (key: SortKey) => void;
 }
 
 function SortableHeader({ label, column, sortKey, sortOrder, onSort, children }: {
@@ -76,71 +60,15 @@ function ESIScore({ score }: { score: number | undefined }) {
   );
 }
 
-export default function PlanetTable({ planets, page, itemsPerPage, onPageChange, onPlanetClick }: PlanetTableProps) {
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [sortKey, setSortKey] = useState<SortKey>('disc_year');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+export default function PlanetTable({ planets, pagination, onPlanetClick, sortKey, sortOrder, onSort }: PlanetTableProps) {
+  const { pageItems } = pagination;
 
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortKey(key);
-      setSortOrder('desc');
-    }
-  };
+  const sortProps = { sortKey, sortOrder, onSort };
 
-  const filteredAndSorted = useMemo(() => {
-    let result = [...planets];
-
-    if (search) {
-      result = result.filter(p => 
-        p.pl_name.toLowerCase().includes(search.toLowerCase()) ||
-        (p.hostname && p.hostname.toLowerCase().includes(search.toLowerCase()))
-      );
-    }
-
-    if (typeFilter !== 'all') {
-      result = result.filter(p => p.discoverymethod === typeFilter);
-    }
-
-    result.sort((a, b) => compareSortValues(a[sortKey], b[sortKey], sortOrder));
-
-    return result;
-  }, [planets, search, typeFilter, sortKey, sortOrder]);
-
-  const sortProps = { sortKey, sortOrder, onSort: handleSort };
-
-  const paginatedPlanets = filteredAndSorted.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-  const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
-
-  const methods = planets.map(p => p.discoverymethod).filter((m): m is string => Boolean(m));
-  const types = ['all', ...Array.from(new Set(methods))];
+  const paginatedPlanets = pageItems(planets);
 
   return (
     <>
-      <div className={styles.controls}>
-        <input
-          type="text"
-          placeholder="Search exoplanets..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className={styles.searchInput}
-        />
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className={styles.select}
-        >
-          {types.map(type => (
-            <option key={type} value={type}>
-              {type === 'all' ? 'All Types' : type}
-            </option>
-          ))}
-        </select>
-      </div>
-
       <div className={styles.tableContainer} role="region" aria-label="Exoplanet results" tabIndex={0}>
         <table className={styles.table}>
           <thead>
@@ -183,25 +111,7 @@ export default function PlanetTable({ planets, page, itemsPerPage, onPageChange,
         </table>
       </div>
 
-      <div className={styles.pagination}>
-        <button 
-          onClick={() => onPageChange(Math.max(1, page - 1))} 
-          disabled={page === 1}
-          className={styles.paginationBtn}
-        >
-          Previous
-        </button>
-        <span className={styles.pageInfo}>
-          Page {page} of {totalPages} ({filteredAndSorted.length} planets)
-        </span>
-        <button 
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))} 
-          disabled={page === totalPages}
-          className={styles.paginationBtn}
-        >
-          Next
-        </button>
-      </div>
+      <PaginationControls pagination={pagination} />
     </>
   );
 }
