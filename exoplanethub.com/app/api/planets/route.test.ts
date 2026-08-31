@@ -87,6 +87,15 @@ describe('GET /api/planets projection', () => {
     expect(projectedFields(scanInputs()[0])).toContain('esi');
   });
 
+  it('projects pl_orbper, which the orbital period range filter reads', async () => {
+    send.mockResolvedValue({ Items: [] });
+    const GET = await importRouteWithCurrentEnv();
+
+    await GET();
+
+    expect(projectedFields(scanInputs()[0])).toContain('pl_orbper');
+  });
+
   it('projects exactly the shared summary field list', async () => {
     send.mockResolvedValue({ Items: [] });
     const GET = await importRouteWithCurrentEnv();

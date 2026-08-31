@@ -9,6 +9,7 @@ const SCORED: PlanetSummary = {
   sy_dist: 370.53,
   discoverymethod: 'Transit',
   disc_year: 2015,
+  pl_orbper: 112.3,
   pl_rade: 1.34,
   pl_bmasse: 2.36,
   pl_eqt: 233,

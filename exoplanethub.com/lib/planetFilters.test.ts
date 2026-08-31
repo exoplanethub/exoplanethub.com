@@ -3,10 +3,14 @@ import type { PlanetSummary } from '@/lib/mockPlanets';
 import {
   DEFAULT_FILTERS,
   FilterState,
+  Range,
+  RangeKey,
   applyFilters,
   discoveryMethods,
+  measuredExtent,
   parseFilters,
   serializeFilters,
+  withRange,
   withSort,
 } from '@/lib/planetFilters';
 
@@ -16,6 +20,7 @@ function makePlanet(overrides: Partial<PlanetSummary> & Pick<PlanetSummary, 'pl_
     sy_dist: 10,
     discoverymethod: 'Transit',
     disc_year: 2000,
+    pl_orbper: 10,
     pl_rade: 1,
     pl_bmasse: 1,
     pl_eqt: 1,
@@ -38,6 +43,7 @@ describe('parseFilters', () => {
 
   it('reads search, method and sort', () => {
     expect(parse('q=kepler&method=Transit&sort=pl_rade.asc')).toEqual({
+      ...DEFAULT_FILTERS,
       q: 'kepler',
       method: 'Transit',
       sortKey: 'pl_rade',
@@ -62,6 +68,39 @@ describe('parseFilters', () => {
   it('ignores params it does not recognise', () => {
     expect(parse('bogus=1&q=kepler')).toEqual({ ...DEFAULT_FILTERS, q: 'kepler' });
   });
+
+  it('reads each range in its own real units', () => {
+    expect(parse('radius=0.5..2&mass=..10&period=1..365').ranges).toEqual({
+      radius: { min: 0.5, max: 2 },
+      mass: { min: null, max: 10 },
+      period: { min: 1, max: 365 },
+    });
+  });
+
+  it.each([
+    ['no lower bound', 'radius=..2', { min: null, max: 2 }],
+    ['no upper bound', 'radius=0.5..', { min: 0.5, max: null }],
+    ['a negative bound, which no planet can match rather than being an error', 'radius=-1..2', { min: -1, max: 2 }],
+    ['bounds the visitor entered backwards', 'radius=10..1', { min: 10, max: 1 }],
+  ])('reads a range with %s', (_label, query, expected) => {
+    expect(parse(query).ranges.radius).toEqual(expected);
+  });
+
+  it.each([
+    ['a bound that is not a number', 'radius=small..2'],
+    ['no separator at all', 'radius=2'],
+    ['more bounds than a range has ends', 'radius=1..2..3'],
+    ['an infinite bound', 'radius=1..Infinity'],
+    ['an empty value', 'radius='],
+    ['a separator with nothing either side', 'radius=..'],
+  ])('leaves the range inactive for %s', (_label, query) => {
+    expect(parse(query).ranges.radius).toEqual({ min: null, max: null });
+  });
+
+  // Number(' ') is 0, which would quietly become a floor no planet falls below.
+  it('reads a blank bound as an omitted end rather than as zero', () => {
+    expect(parse('radius= ..2').ranges.radius).toEqual({ min: null, max: 2 });
+  });
 });
 
 describe('serializeFilters', () => {
@@ -85,14 +124,61 @@ describe('serializeFilters', () => {
     expect(serializeFilters({ ...DEFAULT_FILTERS, q: '  wolf  ' })).toBe('q=wolf');
   });
 
+  it('writes a range as the bounds a visitor would recognise, not slider positions', () => {
+    expect(serializeFilters(withRange(DEFAULT_FILTERS, 'period', { min: 1, max: 365 }))).toBe(
+      'period=1..365'
+    );
+  });
+
+  it.each([
+    ['no lower bound', { min: null, max: 2 }, 'radius=..2'],
+    ['no upper bound', { min: 0.5, max: null }, 'radius=0.5..'],
+  ])('keeps the separator for a range with %s, so the omitted end stays readable', (_label, range, expected) => {
+    expect(serializeFilters(withRange(DEFAULT_FILTERS, 'radius', range))).toBe(expected);
+  });
+
+  it('leaves an unbounded range out of the URL entirely', () => {
+    expect(serializeFilters(withRange(DEFAULT_FILTERS, 'radius', { min: null, max: null }))).toBe('');
+  });
+
   it.each([
     ['the default view', DEFAULT_FILTERS],
     ['a search', { ...DEFAULT_FILTERS, q: 'kepler 186' }],
     ['a method', { ...DEFAULT_FILTERS, method: 'Radial Velocity' }],
     ['a non-default sort', { ...DEFAULT_FILTERS, sortKey: 'esi' as const, sortOrder: 'asc' as const }],
-    ['every filter at once', { q: 'wolf', method: 'Transit', sortKey: 'sy_dist' as const, sortOrder: 'asc' as const }],
+    ['a range bounded at both ends', withRange(DEFAULT_FILTERS, 'radius', { min: 0.5, max: 2 })],
+    ['a range open at the top', withRange(DEFAULT_FILTERS, 'mass', { min: 10, max: null })],
+    ['a range open at the bottom', withRange(DEFAULT_FILTERS, 'period', { min: null, max: 365 })],
+    ['a fractional bound', withRange(DEFAULT_FILTERS, 'radius', { min: 0.0912, max: null })],
+    ['the longest periods in the archive', withRange(DEFAULT_FILTERS, 'period', { min: 8000000, max: null })],
+    [
+      'every filter at once',
+      {
+        ...withRange(withRange(DEFAULT_FILTERS, 'radius', { min: 0.5, max: 2 }), 'period', { min: null, max: 365 }),
+        q: 'wolf',
+        method: 'Transit',
+        sortKey: 'sy_dist' as const,
+        sortOrder: 'asc' as const,
+      },
+    ],
   ])('round-trips %s through the URL', (_label, state) => {
     expect(parse(serializeFilters(state))).toEqual(state);
+  });
+});
+
+describe('withRange', () => {
+  it('leaves the other ranges and filters alone', () => {
+    const state = withRange({ ...DEFAULT_FILTERS, q: 'wolf' }, 'radius', { min: 1, max: 2 });
+
+    expect(withRange(state, 'mass', { min: 5, max: null })).toEqual({
+      ...DEFAULT_FILTERS,
+      q: 'wolf',
+      ranges: {
+        radius: { min: 1, max: 2 },
+        mass: { min: 5, max: null },
+        period: { min: null, max: null },
+      },
+    });
   });
 });
 
@@ -156,6 +242,119 @@ describe('applyFilters', () => {
 
   it('requires a planet to satisfy every active filter', () => {
     expect(names({ q: 'beta', method: 'Transit' })).toEqual([]);
+  });
+});
+
+describe('applyFilters over ranges', () => {
+  const SMALL = makePlanet({ pl_name: 'Small', pl_rade: 0.5, pl_bmasse: 0.2, pl_orbper: 0.09 });
+  const EARTHY = makePlanet({ pl_name: 'Earthy', pl_rade: 1, pl_bmasse: 1, pl_orbper: 365 });
+  const GIANT = makePlanet({ pl_name: 'Giant', pl_rade: 12, pl_bmasse: 300, pl_orbper: 8000000 });
+  const planets = [SMALL, EARTHY, GIANT];
+
+  function inRange(key: RangeKey, range: Range, list = planets) {
+    return applyFilters(list, withRange(DEFAULT_FILTERS, key, range)).map((planet) => planet.pl_name);
+  }
+
+  it.each([
+    ['radius', 'pl_rade' as const],
+    ['mass', 'pl_bmasse' as const],
+    ['period', 'pl_orbper' as const],
+  ])('reads %s off the planet field it names', (key, field) => {
+    const only = makePlanet({ pl_name: 'Only', [field]: 42 });
+
+    expect(inRange(key as RangeKey, { min: 41, max: 43 }, [only, makePlanet({ pl_name: 'Other', [field]: 1 })])).toEqual(['Only']);
+  });
+
+  it('keeps planets sitting exactly on either bound', () => {
+    expect(inRange('radius', { min: 0.5, max: 1 })).toEqual(['Small', 'Earthy']);
+  });
+
+  it('treats an omitted upper bound as no ceiling, so the longest orbits stay in', () => {
+    expect(inRange('period', { min: 365, max: null })).toEqual(['Earthy', 'Giant']);
+  });
+
+  it('treats an omitted lower bound as no floor', () => {
+    expect(inRange('mass', { min: null, max: 1 })).toEqual(['Small', 'Earthy']);
+  });
+
+  it('matches nothing when the bounds are the wrong way round, rather than silently widening', () => {
+    expect(inRange('radius', { min: 10, max: 1 })).toEqual([]);
+  });
+
+  it('applies every active range at once', () => {
+    const state = withRange(withRange(DEFAULT_FILTERS, 'radius', { min: 0.4, max: 2 }), 'period', {
+      min: 100,
+      max: null,
+    });
+
+    expect(applyFilters(planets, state).map((planet) => planet.pl_name)).toEqual(['Earthy']);
+  });
+
+  it('narrows a range against the search box rather than replacing it', () => {
+    const state = { ...withRange(DEFAULT_FILTERS, 'radius', { min: 0.4, max: 20 }), q: 'giant' };
+
+    expect(applyFilters(planets, state).map((planet) => planet.pl_name)).toEqual(['Giant']);
+  });
+});
+
+describe('applyFilters over planets the archive never measured', () => {
+  const MEASURED = makePlanet({ pl_name: 'Measured', pl_bmasse: 5 });
+  const UNMEASURED = makePlanet({ pl_name: 'Unmeasured', pl_bmasse: null });
+  const planets = [MEASURED, UNMEASURED];
+
+  it('keeps an unmeasured planet while the range that would judge it is inactive', () => {
+    expect(applyFilters(planets, DEFAULT_FILTERS)).toBe(planets);
+  });
+
+  it.each([
+    ['both ends', { min: 1, max: 10 }],
+    ['only a floor', { min: 1, max: null }],
+    ['only a ceiling', { min: null, max: 10 }],
+  ])('hides an unmeasured planet once the range sets %s', (_label, range) => {
+    expect(applyFilters(planets, withRange(DEFAULT_FILTERS, 'mass', range)).map((p) => p.pl_name)).toEqual([
+      'Measured',
+    ]);
+  });
+
+  it('hides it for the range that asks about it and no other', () => {
+    const state = withRange(DEFAULT_FILTERS, 'radius', { min: 0, max: 100 });
+
+    expect(applyFilters(planets, state).map((planet) => planet.pl_name)).toEqual([
+      'Measured',
+      'Unmeasured',
+    ]);
+  });
+});
+
+describe('measuredExtent', () => {
+  it('spans the smallest and largest measurement present', () => {
+    const planets = [
+      makePlanet({ pl_name: 'A', pl_orbper: 365 }),
+      makePlanet({ pl_name: 'B', pl_orbper: 0.09 }),
+      makePlanet({ pl_name: 'C', pl_orbper: 8000000 }),
+    ];
+
+    expect(measuredExtent(planets, 'period')).toEqual({ min: 0.09, max: 8000000 });
+  });
+
+  it('skips the planets the archive left blank', () => {
+    const planets = [
+      makePlanet({ pl_name: 'A', pl_bmasse: null }),
+      makePlanet({ pl_name: 'B', pl_bmasse: 3 }),
+    ];
+
+    expect(measuredExtent(planets, 'mass')).toEqual({ min: 3, max: 3 });
+  });
+
+  it('reports no extent at all when nothing was measured, so no track can be drawn', () => {
+    expect(measuredExtent([makePlanet({ pl_name: 'A', pl_rade: null })], 'radius')).toEqual({
+      min: null,
+      max: null,
+    });
+  });
+
+  it('reports no extent for an empty archive', () => {
+    expect(measuredExtent([], 'radius')).toEqual({ min: null, max: null });
   });
 });
 

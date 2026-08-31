@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FilterState } from '@/lib/planetFilters';
+import { DEFAULT_FILTERS, type FilterState } from '@/lib/planetFilters';
 import { useFilterParams } from '@/lib/useFilterParams';
 
 const replace = vi.fn();
@@ -31,7 +31,7 @@ function Harness() {
       <button onClick={() => update({ ...filters, q: 'ross' })}>search ross</button>
       <button onClick={() => update({ ...filters, q: 'wolf 3' })}>search wolf 3</button>
       <button onClick={() => update({ ...filters, sortKey: 'pl_rade', sortOrder: 'asc' })}>sort radius</button>
-      <button onClick={() => update({ q: '', method: null, sortKey: 'disc_year', sortOrder: 'desc' })}>reset</button>
+      <button onClick={() => update(DEFAULT_FILTERS)}>reset</button>
     </>
   );
 }
