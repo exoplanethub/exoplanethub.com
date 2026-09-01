@@ -1,5 +1,8 @@
 const PLANET_PATH = '/planet';
 
+// No archive designation comes close to this; a longer segment is someone's prose, not a name.
+const MAX_NAME_LENGTH = 80;
+
 export function planetUrl(planetName: string): string {
   return `${PLANET_PATH}/${encodeURIComponent(planetName)}`;
 }
@@ -15,5 +18,7 @@ export function planetNameFromParam(param: string): string | null {
     return null;
   }
 
-  return planetName.trim() === '' ? null : planetName;
+  if (planetName.trim() === '' || planetName.length > MAX_NAME_LENGTH) return null;
+
+  return planetName;
 }

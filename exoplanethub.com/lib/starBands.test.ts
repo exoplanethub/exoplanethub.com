@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { STAR_BANDS, STAR_CLASSES, isStarClass, starClassOf } from '@/lib/starBands';
+import { STAR_BANDS, STAR_CLASSES, isStarClass, starBandOf, starClassOf } from '@/lib/starBands';
 
 describe('starClassOf band edges', () => {
   // Every edge from the spec's table. Half-open with the lower bound inclusive, so the edge
@@ -42,6 +42,20 @@ describe('starClassOf band edges', () => {
 
   it('classifies the Sun as G, the class its label claims', () => {
     expect(starClassOf(5772)).toBe('G');
+  });
+});
+
+describe('starBandOf', () => {
+  it('hands back the whole band so a caller needs no second lookup to label it', () => {
+    expect(starBandOf(5772)).toEqual({ starClass: 'G', minTeff: 5300, label: 'G — sun-like' });
+  });
+
+  it.each([null, NaN, 2299])('leaves %p without a band', (teff) => {
+    expect(starBandOf(teff)).toBeNull();
+  });
+
+  it('agrees with starClassOf across every band', () => {
+    for (const band of STAR_BANDS) expect(starBandOf(band.minTeff)?.starClass).toBe(starClassOf(band.minTeff));
   });
 });
 

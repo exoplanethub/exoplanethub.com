@@ -48,4 +48,11 @@ describe('planetNameFromParam rejections', () => {
   ])('returns null for %s — %s', (param) => {
     expect(planetNameFromParam(param)).toBeNull();
   });
+
+  // The segment reaches the not-found page as displayed text, so an essay is not a name.
+  it('rejects a segment longer than any designation, keeping prose out of the lookup', () => {
+    expect(planetNameFromParam('K'.repeat(80))).toHaveLength(80);
+    expect(planetNameFromParam('K'.repeat(81))).toBeNull();
+    expect(planetNameFromParam(encodeURIComponent('Your account is locked. '.repeat(10)))).toBeNull();
+  });
 });
