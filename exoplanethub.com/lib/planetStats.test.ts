@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Planet } from '@/lib/mockPlanets';
-import { planetStatSections, type PlanetStat } from '@/lib/planetStats';
+import { planetHighlights, planetStatSections, type PlanetStat } from '@/lib/planetStats';
 
 const UNMEASURED: Planet = {
   pl_name: 'Kepler-452 b',
@@ -141,5 +141,50 @@ describe('planetStatSections unknowns', () => {
 
   it('keeps a measured zero rather than reading it as missing', () => {
     expect(valueOf('Starlight received', { pl_insol: 0 })).toBe('0 × Earth');
+  });
+});
+
+describe('planetHighlights', () => {
+  function highlightsOf(planet: Partial<Planet>): string[] {
+    return planetHighlights({ ...UNMEASURED, ...planet });
+  }
+
+  it('leads with size, orbit and distance, in that order', () => {
+    expect(highlightsOf({ pl_rade: 1.63, pl_orbper: 384.843, sy_dist: 551.7 })).toEqual([
+      "1.63\u00d7 Earth's radius",
+      '384.8-day orbit',
+      '1,799 light-years away',
+    ]);
+  });
+
+  // A preview that rounded differently would contradict the stat table on the page it links to.
+  it.each([
+    ['Radius', { pl_rade: 1.63 }, '1.63 \u00d7 Earth', "1.63\u00d7 Earth's radius"],
+    ['Orbital period', { pl_orbper: 384.843 }, '384.8 days', '384.8-day orbit'],
+  ])('rounds %s to the figure the section already shows', (label, planet, sectionValue, phrase) => {
+    expect(valueOf(label, planet)).toBe(sectionValue);
+    expect(highlightsOf(planet)).toEqual([phrase]);
+  });
+
+  it('converts distance to the same light-years the System section shows', () => {
+    expect(valueOf('Distance from Earth', { sy_dist: 551.7 })).toBe(
+      '1,799 light-years (551.7 parsecs)'
+    );
+    expect(highlightsOf({ sy_dist: 551.7 })).toEqual(['1,799 light-years away']);
+  });
+
+  it('drops the fields the archive never measured instead of naming them', () => {
+    expect(highlightsOf({ pl_orbper: 384.843 })).toEqual(['384.8-day orbit']);
+  });
+
+  it('returns nothing at all for a planet the archive only names', () => {
+    expect(highlightsOf({})).toEqual([]);
+  });
+
+  it.each([
+    ['NaN', NaN],
+    ['Infinity', Infinity],
+  ])('skips a %s radius rather than quoting it', (_case, corrupt) => {
+    expect(highlightsOf({ pl_rade: corrupt })).toEqual([]);
   });
 });

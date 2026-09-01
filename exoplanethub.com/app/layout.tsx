@@ -3,6 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/layout/NavBar";
 import { generateCSSVariables } from "@/lib/theme";
+import { SITE_ORIGIN } from "@/lib/site";
 // Push
 const inter = Inter({
   variable: "--font-inter",
@@ -15,7 +16,9 @@ const poppins = Poppins({
   subsets: ["latin"],
 });
 
+// Resolves the relative canonical and og:url a page returns, so a shared link is absolute.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_ORIGIN),
   title: "ExoplanetHub - Discover Worlds Beyond Our Solar System",
   description: "Explore thousands of confirmed exoplanets with detailed data and visualizations",
 };

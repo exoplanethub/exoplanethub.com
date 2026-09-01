@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getESIBand } from '@/components/explore/esiBands';
 import type { Planet } from '@/lib/mockPlanets';
-import PlanetPage from './page';
+import PlanetPage, { generateMetadata } from './page';
 
 const { NotFoundSignal, getPlanetDetail } = vi.hoisted(() => ({
   NotFoundSignal: class NotFoundSignal extends Error {},
@@ -234,5 +234,46 @@ describe('PlanetPage misses', () => {
     await expect(renderPage('Kepler-452%20b')).rejects.toThrow(
       'ProvisionedThroughputExceededException'
     );
+  });
+});
+
+describe('PlanetPage metadata', () => {
+  it('titles and describes the planet rather than inheriting the site defaults', async () => {
+    getPlanetDetail.mockResolvedValue(KEPLER_452B);
+
+    const metadata = await generateMetadata({ params: Promise.resolve({ name: 'Kepler-452%20b' }) });
+
+    expect(metadata.title).toBe('Kepler-452 b — Exoplanet Profile | ExoplanetHub');
+    expect(metadata.description).toContain("1.63\u00d7 Earth's radius");
+  });
+
+  // Both entry points resolve to the same key, which is what lets planetDetail's cache() serve
+  // the title and the body from one GetItem.
+  it('asks for the same planet when titling as when rendering', async () => {
+    getPlanetDetail.mockResolvedValue(KEPLER_452B);
+    const params = Promise.resolve({ name: 'Kepler-452%20b' });
+
+    await generateMetadata({ params });
+    render(await PlanetPage({ params }));
+
+    expect(getPlanetDetail.mock.calls).toEqual([['Kepler-452 b'], ['Kepler-452 b']]);
+  });
+
+  it('describes the 404 for an unstocked name instead of throwing', async () => {
+    getPlanetDetail.mockResolvedValue(null);
+
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ name: 'Definitely%20Not%20A%20Planet%20b' }),
+    });
+
+    expect(metadata.title).toBe('Planet not found | ExoplanetHub');
+    expect(metadata.robots).toMatchObject({ index: false });
+  });
+
+  it('describes the 404 for a malformed segment without reading the table', async () => {
+    const metadata = await generateMetadata({ params: Promise.resolve({ name: '%ZZ' }) });
+
+    expect(metadata.title).toBe('Planet not found | ExoplanetHub');
+    expect(getPlanetDetail).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,10 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ESIBadge from '@/components/explore/ESIBadge';
 import { earthComparisons, type EarthComparison } from '@/lib/earthComparison';
 import type { Planet } from '@/lib/mockPlanets';
 import { getPlanetDetail } from '@/lib/planetDetail';
+import { planetMetadata } from '@/lib/planetMetadata';
 import { planetNameFromParam } from '@/lib/planetUrl';
 import { planetStatSections, type PlanetStatSection } from '@/lib/planetStats';
 import styles from './page.module.css';
@@ -21,6 +23,11 @@ interface PlanetPageProps {
 async function loadPlanet(params: PlanetPageProps['params']): Promise<Planet | null> {
   const planetName = planetNameFromParam((await params).name);
   return planetName === null ? null : getPlanetDetail(planetName);
+}
+
+// getPlanetDetail is cache()d, so titling the page and rendering it share one GetItem.
+export async function generateMetadata({ params }: PlanetPageProps): Promise<Metadata> {
+  return planetMetadata(await loadPlanet(params));
 }
 
 export default async function PlanetPage({ params }: PlanetPageProps) {

@@ -36,15 +36,34 @@ function text(value: string | null): string | null {
   return value !== null && value.trim() !== '' ? value : null;
 }
 
+function lightYearsFrom(parsecs: number): number {
+  return parsecs * LIGHT_YEARS_PER_PARSEC;
+}
+
 function distanceFromEarth(parsecs: number | null): string | null {
   if (!isMeasured(parsecs)) return null;
 
-  const lightYears = NUMBER.format(parsecs * LIGHT_YEARS_PER_PARSEC);
+  const lightYears = NUMBER.format(lightYearsFrom(parsecs));
   return `${lightYears} light-years (${NUMBER.format(parsecs)} parsecs)`;
 }
 
 function spectralClass(starTemperature: number | null): string | null {
   return starBandOf(starTemperature)?.label ?? null;
+}
+
+function highlight(value: number | null, phrase: (amount: string) => string): string | null {
+  return isMeasured(value) ? phrase(NUMBER.format(value)) : null;
+}
+
+// Same numbers as the sections below, so a link preview can never quote a figure the page contradicts.
+export function planetHighlights(planet: Planet): string[] {
+  const distance = isMeasured(planet.sy_dist) ? lightYearsFrom(planet.sy_dist) : null;
+
+  return [
+    highlight(planet.pl_rade, (radius) => `${radius}× Earth's radius`),
+    highlight(planet.pl_orbper, (days) => `${days}-day orbit`),
+    highlight(distance, (lightYears) => `${lightYears} light-years away`),
+  ].filter((phrase): phrase is string => phrase !== null);
 }
 
 export function planetStatSections(planet: Planet): PlanetStatSection[] {
