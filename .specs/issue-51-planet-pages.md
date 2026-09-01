@@ -69,9 +69,11 @@ surfaces, so `PLANET_SUMMARY_FIELDS` doesn't grow.
 route segment — first hit renders and caches on Vercel, matching `/api/planets`' 1h CDN policy
 against the ~6h sync. *Alternative: `generateStaticParams` prebuilding ~6,000 pages — rejected:
 it puts a full table Scan in every build, bloats build time, and pages go stale until redeploy.*
-The sitemap (task 5) is the one full-table read that remains, and that's deliberate: one runtime
+The sitemap (task 5) is the one full-table read that remains, and that's deliberate: one paginated
 Scan per revalidate window — the same cadence `/api/planets` already scans hourly — with a
-projection limited to `pl_name` and `last_updated`, never full items. Cheap and periodic, unlike
+projection limited to `pl_name` and `last_updated`, never full items. "Paginated" is load-bearing:
+follow `scanAllPlanets()`'s `LastEvaluatedKey` loop rather than a single `ScanCommand`, which
+truncates at 1MB and would silently drop planets as the archive grows. Cheap and periodic, unlike
 the per-build Scan-plus-6,000-renders that made prebuilding a bad deal.
 
 **4. Misses are defined out of existence internally, handled once externally.** Internal links are
@@ -85,7 +87,8 @@ the name `<button>` is the *only* keyboard-reachable way to open the modal — t
 handler is deliberately mouse-only. So the name becomes a `next/link` to the planet page (stopping
 propagation so a mouse click on it navigates without also firing the row's modal handler), and each
 row gains one explicit quick-look button (accessible label "Quick view: <name>") that opens the
-modal. Keyboard users keep their modal entry point and gain a navigation one; mouse row-click still
+modal. The button lives inside the existing name `<td>` alongside the link — not a new column,
+which would force a matching `<th>` and widen the table for one icon-sized control. Keyboard users keep their modal entry point and gain a navigation one; mouse row-click still
 opens the modal. *Alternative: leave the name as the modal button and reach the page only through
 the modal's "View full profile" link — rejected: the table is the densest planet listing on the
 site, and the middle-click/copy-link promise dies exactly there.* `PlanetCard` (plain `<h3>` with
@@ -110,6 +113,6 @@ click flows that #41 just shipped.
 4. Link-up: `next/link` names in `PlanetCard`, `PlanetModal` ("View full profile"), and
    `LatestDiscoveries`; in `PlanetTable`, name→link plus the new quick-look modal control per
    decision 5 (size: M)
-5. `app/sitemap.ts`: one runtime Scan projected to `pl_name`/`last_updated` only, `revalidate`
-   aligned with data cadence (size: S)
+5. `app/sitemap.ts`: one paginated runtime Scan (`LastEvaluatedKey` loop per `scanAllPlanets()`)
+   projected to `pl_name`/`last_updated` only, `revalidate` aligned with data cadence (size: S)
 6. Per-planet OG image via `opengraph-image.tsx`/`ImageResponse` (size: M — can trail the rest)
