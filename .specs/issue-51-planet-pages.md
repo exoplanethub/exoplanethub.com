@@ -14,7 +14,7 @@ metadata, and room for the plain-language context a modal can't fit.
 - Shared links preview meaningfully ("Kepler-452 b — 1.6 R⊕, 385-day orbit"), not as a bare domain.
 - The page shows the full field set the sync writes (star, system, discovery, ESI) with
   plain-language framing for non-astronomers — richer than the modal, which stays as the quick look.
-- Planets become discoverable: real anchor links throughout the site plus a sitemap.
+- Planets become discoverable: real links (`next/link`) throughout the site plus a sitemap.
 
 ## Out of Scope
 - Comparison tool, 3D visualisation, favorites (Future Ideas; comparison builds on this later).
@@ -30,21 +30,25 @@ metadata, and room for the plain-language context a modal can't fit.
 - [ ] Page shows grouped sections — Planet (radius, mass, density, temperature, insolation, orbital
       period, semi-major axis), Star (hostname, spectral class via `starClassOf`, temperature,
       radius, mass, age), System (distance, star/planet counts), Discovery (year, method, facility)
-      — plus the ESI badge with its band and a plain-language Earth comparison.
+      — plus the ESI badge with its band and a plain-language Earth comparison. (`st_logg` is
+      deliberately omitted: log-cgs surface gravity means nothing to a lay reader — an intentional
+      cut, not a gap to fill later.)
 - [ ] Every nullable field degrades to a clear "—"/unknown state; no layout breakage (all fields
       except `pl_name` and `last_updated` can be null).
 - [ ] A provenance line cites NASA Exoplanet Archive and the item's `last_updated`.
 - [ ] `<title>` and meta description are planet-specific; OG/Twitter tags produce a stat-bearing
       link preview.
-- [ ] Planet names in `PlanetTable`, `PlanetCard`, `PlanetModal`, and `LatestDiscoveries` are real
-      anchors (`<a>`) to the planet page — middle-click and copy-link work. Explore's existing
-      click-opens-modal behavior is otherwise unchanged; the modal gains a "View full profile" link.
+- [ ] Planet names in `PlanetTable`, `PlanetCard`, `PlanetModal`, and `LatestDiscoveries` link to
+      the planet page via `next/link` (renders a real `<a>` — middle-click and copy-link work).
+      In the table, the modal keeps a keyboard-reachable entry point via a separate quick-look
+      control (decision 5); mouse row-click still opens the modal. The modal gains a "View full
+      profile" link.
 - [ ] `sitemap.xml` lists every planet page and revalidates on the same cadence as the archive cache.
 - [ ] Page is keyboard/screen-reader accessible: one `<h1>` (planet name), hierarchical headings,
       stats readable as label/value pairs.
 
 ## Technical Approach
-Frontend only (Next.js App Router). Four decisions matter:
+Frontend only (Next.js App Router). Five decisions matter:
 
 **1. URL is the exact `pl_name`, URI-encoded.** `/planet/Kepler-452%20b` (browsers display the
 decoded form). One helper pair in a new module owns the mapping: `planetUrl(pl_name)` builds every
@@ -65,6 +69,10 @@ surfaces, so `PLANET_SUMMARY_FIELDS` doesn't grow.
 route segment — first hit renders and caches on Vercel, matching `/api/planets`' 1h CDN policy
 against the ~6h sync. *Alternative: `generateStaticParams` prebuilding ~6,000 pages — rejected:
 it puts a full table Scan in every build, bloats build time, and pages go stale until redeploy.*
+The sitemap (task 5) is the one full-table read that remains, and that's deliberate: one runtime
+Scan per revalidate window — the same cadence `/api/planets` already scans hourly — with a
+projection limited to `pl_name` and `last_updated`, never full items. Cheap and periodic, unlike
+the per-build Scan-plus-6,000-renders that made prebuilding a bad deal.
 
 **4. Misses are defined out of existence internally, handled once externally.** Internal links are
 generated from archive rows via `planetUrl`, so they always resolve while the planet exists. Only
@@ -72,13 +80,26 @@ external/stale URLs can miss: `getPlanetDetail` returning `null` triggers `notFo
 `not-found.tsx` offers the explore-search escape hatch. (When #40 lands tombstones, this same
 boundary is where a "retracted" notice would slot in — nothing else changes.)
 
+**5. The table row gets two controls; the pattern spreads nowhere else.** In `PlanetTable` today
+the name `<button>` is the *only* keyboard-reachable way to open the modal — the `<tr>` click
+handler is deliberately mouse-only. So the name becomes a `next/link` to the planet page (stopping
+propagation so a mouse click on it navigates without also firing the row's modal handler), and each
+row gains one explicit quick-look button (accessible label "Quick view: <name>") that opens the
+modal. Keyboard users keep their modal entry point and gain a navigation one; mouse row-click still
+opens the modal. *Alternative: leave the name as the modal button and reach the page only through
+the modal's "View full profile" link — rejected: the table is the densest planet listing on the
+site, and the middle-click/copy-link promise dies exactly there.* `PlanetCard` (plain `<h3>` with
+a separate "Learn More" button) and `LatestDiscoveries` (bare `<h3>`) have no such conflict — their
+names simply become links, and the two-control pattern must not spread to them.
+
 Metadata via `generateMetadata` reusing the same fetch (deduped by React `cache()`). A per-planet
 OG *image* (`opengraph-image.tsx` + `ImageResponse` rendering name/stats on brand background) is a
 separate final task — links preview usefully from text metadata alone, so it can ship later without
 blocking. Reuse `getESIBand`, `starClassOf`, and existing formatting conventions; no new band logic.
 
-Risk: none of this touches explore state; the only shared surface is anchor markup inside
-card/table/modal, which must not break the modal's open-on-click or keyboard flows (#41 work).
+Risk: none of this touches explore state; the only shared surface is link markup inside
+card/table/modal, and decision 5 pins exactly how the table preserves the modal's keyboard and
+click flows that #41 just shipped.
 
 ## Task Breakdown
 1. `lib/planetDetail.ts` (server-only GetItem returning full `Planet` | null) + `planetUrl()`/param
@@ -86,7 +107,9 @@ card/table/modal, which must not break the modal's open-on-click or keyboard flo
 2. `/planet/[name]` route: page layout with grouped sections, ESI + star-class reuse, plain-language
    Earth comparison, provenance line, null-field handling, `not-found.tsx` (size: L)
 3. `generateMetadata`: planet-specific title, description, OG/Twitter tags, shared cached fetch (size: S)
-4. Link-up: real anchors in `PlanetTable`, `PlanetCard`, `PlanetModal` ("View full profile"),
-   `LatestDiscoveries`, preserving modal and keyboard behavior (size: M)
-5. `app/sitemap.ts` generating planet URLs from the archive, `revalidate` aligned with data cadence (size: S)
+4. Link-up: `next/link` names in `PlanetCard`, `PlanetModal` ("View full profile"), and
+   `LatestDiscoveries`; in `PlanetTable`, name→link plus the new quick-look modal control per
+   decision 5 (size: M)
+5. `app/sitemap.ts`: one runtime Scan projected to `pl_name`/`last_updated` only, `revalidate`
+   aligned with data cadence (size: S)
 6. Per-planet OG image via `opengraph-image.tsx`/`ImageResponse` (size: M — can trail the rest)
