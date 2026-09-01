@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getESIBand } from '@/components/explore/esiBands';
 import type { Planet } from '@/lib/mockPlanets';
 import PlanetPage from './page';
 
@@ -59,7 +60,7 @@ const KEPLER_452B: Planet = {
   st_rad: 1.11,
   st_mass: 1.04,
   st_age: 6,
-  esi: 0.83,
+  esi: 83,
 };
 
 async function renderPage(segment: string) {
@@ -72,6 +73,10 @@ function sectionNamed(title: string) {
 
 function statValue(section: string, label: string) {
   return within(sectionNamed(section)).getByText(label, { selector: 'dt' }).nextElementSibling;
+}
+
+function comparisonDetail(aspect: string) {
+  return statValue('Compared with Earth', aspect);
 }
 
 beforeEach(() => {
@@ -100,6 +105,7 @@ describe('PlanetPage', () => {
     await renderPage('Kepler-452%20b');
 
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+      'Compared with Earth',
       'Planet',
       'Star',
       'System',
@@ -119,6 +125,31 @@ describe('PlanetPage', () => {
     await renderPage('Kepler-452%20b');
 
     expect(statValue(section, label)).toHaveTextContent(value);
+  });
+
+  it('badges the ESI score with the band label from the shared thresholds', async () => {
+    await renderPage('Kepler-452%20b');
+
+    const badge = screen.getByRole('button', { name: /^ESI 83, / });
+    expect(badge).toHaveTextContent('ESI 83');
+    expect(badge).toHaveTextContent(getESIBand(83).label);
+  });
+
+  it.each([
+    ['Size', "About 1.6 times Earth's width."],
+    ['Temperature', 'About -8 °C (17 °F) from starlight alone'],
+    ['Starlight', 'About 1.1 times the starlight Earth gets from the Sun.'],
+    ['Year', 'A year here lasts about 1.1 Earth years.'],
+  ])('pairs the %s comparison with its plain-language reading', async (aspect, detail) => {
+    await renderPage('Kepler-452%20b');
+
+    expect(comparisonDetail(aspect)).toHaveTextContent(detail);
+  });
+
+  it('leaves out the mass comparison the archive cannot support', async () => {
+    await renderPage('Kepler-452%20b');
+
+    expect(within(sectionNamed('Compared with Earth')).queryByText('Mass')).toBeNull();
   });
 
   it('says the star it orbits above the stats', async () => {
@@ -158,6 +189,18 @@ describe('PlanetPage with unmeasured fields', () => {
     await renderPage('HD%20000001%20b');
 
     expect(screen.queryByText(leak)).toBeNull();
+  });
+
+  it('omits the comparison block entirely rather than framing an empty one', async () => {
+    await renderPage('HD%20000001%20b');
+
+    expect(screen.queryByRole('region', { name: 'Compared with Earth' })).toBeNull();
+  });
+
+  it('shows no ESI badge for a planet the sync could not score', async () => {
+    await renderPage('HD%20000001%20b');
+
+    expect(screen.queryByRole('button', { name: /^ESI /i })).toBeNull();
   });
 
   it('drops the host-star clause instead of naming an unknown star', async () => {

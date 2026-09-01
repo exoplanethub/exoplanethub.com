@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation';
+import ESIBadge from '@/components/explore/ESIBadge';
+import { earthComparisons, type EarthComparison } from '@/lib/earthComparison';
 import type { Planet } from '@/lib/mockPlanets';
 import { getPlanetDetail } from '@/lib/planetDetail';
 import { planetNameFromParam } from '@/lib/planetUrl';
@@ -35,10 +37,11 @@ export default async function PlanetPage({ params }: PlanetPageProps) {
               ? `A confirmed exoplanet orbiting ${planet.hostname}.`
               : 'A confirmed exoplanet.'}
           </p>
-          {/* ESI badge and Earth comparison mount here. */}
+          <ESIBadge score={planet.esi} variant="page" />
         </header>
 
         <div className={styles.sections}>
+          <EarthComparisonSection comparisons={earthComparisons(planet)} />
           {planetStatSections(planet).map((section) => (
             <StatSection key={section.id} section={section} />
           ))}
@@ -53,6 +56,28 @@ export default async function PlanetPage({ params }: PlanetPageProps) {
         </p>
       </article>
     </main>
+  );
+}
+
+const COMPARISON_HEADING_ID = 'earth-comparison-heading';
+
+function EarthComparisonSection({ comparisons }: { comparisons: EarthComparison[] }) {
+  if (comparisons.length === 0) return null;
+
+  return (
+    <section className={styles.section} aria-labelledby={COMPARISON_HEADING_ID}>
+      <h2 id={COMPARISON_HEADING_ID} className={styles.sectionTitle}>
+        Compared with Earth
+      </h2>
+      <dl className={styles.comparisons}>
+        {comparisons.map(({ aspect, detail }) => (
+          <div key={aspect} className={styles.comparison}>
+            <dt className={styles.statLabel}>{aspect}</dt>
+            <dd className={styles.comparisonDetail}>{detail}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 

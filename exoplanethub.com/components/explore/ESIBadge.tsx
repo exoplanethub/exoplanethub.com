@@ -6,9 +6,10 @@ import styles from './ESIBadge.module.css';
 
 interface ESIBadgeProps {
   score: number | undefined;
+  variant?: 'card' | 'page';
 }
 
-export default function ESIBadge({ score }: ESIBadgeProps) {
+export default function ESIBadge({ score, variant = 'card' }: ESIBadgeProps) {
   const [explainerOpen, setExplainerOpen] = useState(false);
 
   if (typeof score !== 'number') return null;
@@ -18,7 +19,7 @@ export default function ESIBadge({ score }: ESIBadgeProps) {
   return (
     <>
       <button
-        className={styles.badge}
+        className={`${styles.badge} ${styles[variant]}`}
         style={band.style}
         aria-label={`ESI ${score}, ${band.label}. What is the Earth Similarity Index?`}
         // The badge sits inside cards and rows that activate on click and on Enter/Space themselves.

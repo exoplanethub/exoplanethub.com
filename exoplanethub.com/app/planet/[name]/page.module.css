@@ -76,6 +76,32 @@
   color: var(--color-text);
 }
 
+.comparisons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comparison {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 4px 24px;
+  align-items: baseline;
+}
+
+.comparisonDetail {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .comparison {
+    grid-template-columns: 1fr;
+  }
+}
+
 .provenance {
   margin: 32px 0 0;
   font-size: 14px;
