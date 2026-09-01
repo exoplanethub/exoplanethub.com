@@ -1,6 +1,6 @@
 # Spec: Shareable Planet Pages
 Issue: #51
-Status: draft
+Status: approved
 
 ## Problem Statement
 A planet currently exists only as `PlanetModal` inside the explore view — it has no URL, so it
@@ -90,9 +90,3 @@ card/table/modal, which must not break the modal's open-on-click or keyboard flo
    `LatestDiscoveries`, preserving modal and keyboard behavior (size: M)
 5. `app/sitemap.ts` generating planet URLs from the archive, `revalidate` aligned with data cadence (size: S)
 6. Per-planet OG image via `opengraph-image.tsx`/`ImageResponse` (size: M — can trail the rest)
-
-## Open Questions
-- Q: URL format — I recommend the exact NASA name, URI-encoded (`/planet/Kepler-452%20b`, which
-  browsers display as `…/planet/Kepler-452 b`). The alternative is prettier slugs
-  (`/planet/kepler-452-b`), but those need a stored slug attribute, a sync change, and a collision
-  policy, and shared URLs are forever so we should pick once. OK with exact encoded names?
