@@ -102,6 +102,17 @@ All 3 production advisories reach the tree through a single path —
 The remaining 24 are dev-only, all inside the ESLint tree: `minimatch`, `brace-expansion`,
 `picomatch`, `js-yaml`, `flatted`, `ajv`.
 
+A 25th published while this report was being written and so is absent from the raw counts above —
+GHSA-p498-v437-472g went out at 2026-09-02T14:27Z, seven minutes before the commit:
+
+| Severity | Package | Installed | Patched | Advisory |
+|----------|---------|-----------|---------|----------|
+| medium | @humanfs/node | 0.16.7 | >=0.16.8 | [GHSA-p498-v437-472g](https://github.com/advisories/GHSA-p498-v437-472g) |
+
+Recursive copy follows symlinked files and copies data from outside the source tree. `eslint`
+depends on `@humanfs/node` directly, so it is dev-only like the rest, and it takes the dev-tree
+count to **25** and the total to **28**.
+
 </details>
 
 <details>
@@ -123,8 +134,8 @@ no known vulnerabilities.
 
 ## 🔴 Urgent
 
-### All 27 advisories clear with a lockfile refresh — no `package.json` changes needed
-- **Package**: transitive only — `minimatch`, `brace-expansion`, `picomatch`, `js-yaml`, `flatted`, `ajv`, `browserslist`, `@babel/core`
+### All 28 advisories clear with a lockfile refresh — no `package.json` changes needed
+- **Package**: transitive only — `minimatch`, `brace-expansion`, `picomatch`, `js-yaml`, `flatted`, `ajv`, `@humanfs/node`, `browserslist`, `@babel/core`
 - **Why**: Every flagged transitive already has a patched release that satisfies the range its
   parent asks for. The lockfile is simply pinning older resolutions. Three of these sit in the
   **production** tree (`browserslist` ×2 high, `@babel/core` ×1 low, all via `next > styled-jsx`),
@@ -140,6 +151,10 @@ no known vulnerabilities.
   Patched versions confirmed published on the registry: `minimatch` 3.1.5 & 9.0.9,
   `brace-expansion` 1.1.18 & 2.1.4, `js-yaml` 4.3.2, `ajv` 6.15.0, `flatted` 3.4.4,
   `browserslist` 4.28.8, `@babel/core` 7.29.7.
+
+  That measurement predates GHSA-p498-v437-472g, so the 28th advisory is not in the `Before`
+  column. It clears the same way and needs no separate action: `@humanfs/node` 0.16.8 has been on
+  the registry since 2026-04-17, well inside the range `eslint` already asks for.
 - **Source**: [GHSA-c83g-rgw3-j3cx](https://github.com/advisories/GHSA-c83g-rgw3-j3cx) ·
   [GHSA-73wf-gq98-2v4g](https://github.com/advisories/GHSA-73wf-gq98-2v4g) ·
   [GHSA-4x5r-pxfx-6jf8](https://github.com/advisories/GHSA-4x5r-pxfx-6jf8) ·
@@ -151,6 +166,9 @@ no known vulnerabilities.
   `eslint` 9.39.2 → 9.39.5 (the final 9.x — see the EOL finding below) and picks up the
   `@types/*`, `@vitejs/plugin-react` and `@testing-library/user-event` patch bumps. It does
   **not** cross any major boundary. CI (`lint`, `typecheck`, `test`, `build`) is the check.
+- **Status — done**: landed on `dev` as #78 on 2026-09-02, after this audit ran. The refreshed
+  lockfile also resolves `@humanfs/node` to 0.16.8, so the late-breaking 28th advisory is cleared
+  along with the rest and no follow-up is needed.
 
 ## 🟡 Recommended
 
@@ -160,7 +178,7 @@ no known vulnerabilities.
   *"This version is no longer supported. Please see https://eslint.org/version-support for other
   options."* (confirmed for both 9.39.2 and 9.39.5 via `npm view eslint@9.39.5 deprecated`).
   v10 is the only maintained line. No further security patches will be issued for 9.x — which
-  matters because the ESLint tree is where 24 of the 27 current advisories live.
+  matters because the ESLint tree is where 25 of the 28 current advisories live.
 - **Why it is blocked, not just deferred**: `eslint-config-next` depends on
   `eslint-plugin-react ^7.37.0`, whose latest release (7.37.5, **published 2025-04-03**) declares
   `peerDependencies.eslint: "^3 || … || ^9.7"` — no v10 — and hard-crashes under ESLint 10 calling
@@ -196,7 +214,8 @@ no known vulnerabilities.
   (latest v3), `aws-actions/configure-aws-credentials@v5` (latest v6.2.4, published 2026-08-31).
   Meanwhile `ci.yml` and `backend-ci.yml` are already on `checkout@v7`. The blast radius is
   inverted from the update cadence: the least-updated workflow holds the most privilege.
-  `codeql.yml` is also still on `checkout@v5`.
+  Two others lag more narrowly: `codeql.yml` is still on `checkout@v5`, and `backend-ci.yml` on
+  `setup-python@v5`.
   No advisory is outstanding against these versions — this is drift and consistency, not an
   active vulnerability.
 - **Source**: [aws-actions/configure-aws-credentials](https://github.com/aws-actions/configure-aws-credentials) ·
@@ -204,12 +223,17 @@ no known vulnerabilities.
   [actions/checkout](https://github.com/actions/checkout/releases) | **Verified**: 2026-09-02
 - **Search terms used**: `gh api repos/<owner>/<repo>/releases/latest` for each action;
   "aws-actions/configure-aws-credentials v6 release breaking changes OIDC"
-- **Breaking changes**: `setup-sam@v3` is a Node 24 runner bump only ("This release tracks the v2
-  tag"), so it is a drop-in. `configure-aws-credentials@v6` changes session-tagging defaults, but
-  tagging is not applied on the OIDC path this workflow uses, so the existing config carries over.
-- **Action**: Bring the deploy and CodeQL workflows up to `checkout@v7` / `setup-python@v7`, and
-  move deploy to `setup-sam@v3` and `configure-aws-credentials@v6`. Worth doing in one small PR so
-  the whole `.github/workflows/` surface is consistent and future drift is obvious at a glance.
+- **Breaking changes**: both are the same class — a Node 24 runner bump. `setup-sam@v3` is that
+  and nothing else ("This release tracks the v2 tag"). `configure-aws-credentials@v6.0.0` lists
+  exactly one breaking change: *"Update action to use node24 — Note this requires GitHub action
+  runner version v2.327.1 or later"*; the `transitive-tag-keys` support in the same release is a
+  new feature, not a changed default. GitHub-hosted runners are long past v2.327.1, so both are
+  drop-ins and the existing OIDC config carries over untouched.
+- **Action**: One PR covering all three lagging workflows, so the whole `.github/workflows/`
+  surface is consistent and future drift is obvious at a glance. `deploy-aws-backend.yml` takes
+  `checkout@v7`, `setup-python@v7`, `setup-sam@v3` and `configure-aws-credentials@v6`;
+  `codeql.yml` takes `checkout@v7`; `backend-ci.yml` takes `setup-python@v7`. Leaving backend-ci
+  on v5 would defeat the consistency the PR is for.
 
 ### `boto3` is unpinned in the Lambda requirements — builds are not reproducible
 - **Package**: `aws-backend/lambda/sync/requirements.txt` → `boto3` (no version constraint)
@@ -234,15 +258,37 @@ no known vulnerabilities.
 
 ### Routine version drift — Next.js 16.3.4 and AWS SDK 3.1124.0
 - **Package**: next 16.3.3 → 16.3.4, eslint-config-next 16.3.3 → 16.3.4, @aws-sdk/* 3.1120.0 → 3.1124.0
-- **Why**: Next.js 16.3.4 (published 2026-08-31) is a three-fix patch — testmode fetch recursion,
-  a build error when aliasing `typescript` to `@typescript/typescript6`, and an unset `crossOrigin`
-  in Turbopack manifests. **No security content**; I read the release notes specifically to check.
+- **Why**: Next.js 16.3.4 (published 2026-08-31) is four items, not three. It re-enables AVIF
+  Image Optimization ([#97949](https://github.com/vercel/next.js/pull/97949)), plus three
+  backported bug fixes — testmode fetch recursion, a build error when aliasing `typescript` to
+  `@typescript/typescript6`, and an unset `crossOrigin` in Turbopack manifests. **No *new* security
+  content**; I read the release notes specifically to check.
+
+  That AVIF line is worth following, because **the pinned 16.3.3 is itself a critical security
+  release**. It fixes two unauthenticated RCEs:
+  [GHSA-p293-qw3h-jr36](https://github.com/advisories/GHSA-p293-qw3h-jr36) (CVSS 9.0, Windows-hosted
+  servers only) and [GHSA-2xp9-vwfh-vxw4](https://github.com/advisories/GHSA-2xp9-vwfh-vxw4)
+  (CVSS 9.5, the Image Optimization API when AVIF files are optimised, through `libheif` inside
+  `sharp`). 16.3.3 shipped that second fix by disabling AVIF optimization outright; 16.3.4 turns it
+  back on now the upstream fix has propagated.
+
+  **Is this app exposed? No, on both counts.** 16.3.3 is the patched version for both advisories,
+  so the current pin *is* the fix. The AVIF surface is nil independently of that: `next/image` is
+  imported nowhere in the repo — zero hits anywhere on `dev` — and `next.config.ts` declares no
+  `images` config, so the Image Optimization API is never reachable. The Windows advisory is moot
+  for a Vercel deployment. Upgrading to 16.3.4 therefore closes no gap here; it is drift, which is
+  why this finding sits in Recommended rather than Urgent.
+
   The AWS SDK gap is four routine daily releases (3.1124.0 published 2026-09-01) with no advisory
   attached.
 - **Source**: [Next.js v16.3.4 release](https://github.com/vercel/next.js/releases/tag/v16.3.4) ·
+  [Next.js v16.3.3 release](https://github.com/vercel/next.js/releases/tag/v16.3.3) ·
+  [GHSA-p293-qw3h-jr36](https://github.com/advisories/GHSA-p293-qw3h-jr36) ·
+  [GHSA-2xp9-vwfh-vxw4](https://github.com/advisories/GHSA-2xp9-vwfh-vxw4) ·
   [npm registry publish times](https://www.npmjs.com/package/next?activeTab=versions)
   | **Verified**: 2026-09-02
-- **Search terms used**: "Next.js 16.3.4 release notes changelog"; `npm view next time`
+- **Search terms used**: "Next.js 16.3.4 release notes changelog"; `npm view next time`;
+  `git grep next/image` and `next.config.ts` on `dev` for the exposure check
 - **Action**: Low priority — fold into the next routine dependency bump rather than doing it for
   its own sake. `next` and `eslint-config-next` are exact-pinned in `package.json`, so unlike the
   Urgent finding these two do need a manifest edit, and they should move together.
@@ -358,4 +404,4 @@ no known vulnerabilities.
 
 | Date | Focus | Findings | Notes |
 |------|-------|----------|-------|
-| 2026-09-02 | First run — full inventory of frontend, backend and CI; supply-chain + transitive deep dive | 1 urgent, 4 recommended, 7 awareness | Established the report. Headline: `pnpm update` alone clears all 27 advisories (3 in the prod tree) with no manifest change — verified by re-auditing a scratch copy. ESLint 9 hit EOL 2026-08-06 and is npm-deprecated, but v10 is blocked upstream by `eslint-plugin-react`; tracking vercel/next.js#91710. TS 7.0 is stable but unusable until typescript-eslint widens past `<6.1.0`. Cross-checked the 124-package prod tree against OSV — same three advisories, nothing missed. No injection attempts or anomalous publishers found. |
+| 2026-09-02 | First run — full inventory of frontend, backend and CI; supply-chain + transitive deep dive | 1 urgent, 4 recommended, 7 awareness | Established the report. Headline: `pnpm update` alone clears all 28 advisories (3 in the prod tree) with no manifest change — verified by re-auditing a scratch copy; landed as #78. ESLint 9 hit EOL 2026-08-06 and is npm-deprecated, but v10 is blocked upstream by `eslint-plugin-react`; tracking vercel/next.js#91710. TS 7.0 is stable but unusable until typescript-eslint widens past `<6.1.0`. Cross-checked the 124-package prod tree against OSV — same three advisories, nothing missed. No injection attempts or anomalous publishers found. |
