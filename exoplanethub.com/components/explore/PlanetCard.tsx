@@ -1,5 +1,6 @@
 'use client';
 import { PlanetSummary } from '@/lib/mockPlanets';
+import { measurement } from '@/lib/planetStats';
 import PlanetNameLink from '@/components/planet/PlanetNameLink';
 import ESIBadge from './ESIBadge';
 import styles from './PlanetCard.module.css';
@@ -26,11 +27,11 @@ export default function PlanetCard({ planet, onClick }: PlanetCardProps) {
         <div className={styles.stats}>
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Distance</span>
-            <span className={styles.statValue}>{planet.sy_dist ? planet.sy_dist.toFixed(2) : 'N/A'} pc</span>
+            <span className={styles.statValue}>{measurement(planet.sy_dist, 'pc') ?? 'N/A'}</span>
           </div>
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Radius</span>
-            <span className={styles.statValue}>{planet.pl_rade ? planet.pl_rade.toFixed(2) : 'N/A'}× Earth</span>
+            <span className={styles.statValue}>{measurement(planet.pl_rade, '× Earth') ?? 'N/A'}</span>
           </div>
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Method</span>

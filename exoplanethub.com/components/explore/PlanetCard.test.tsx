@@ -57,6 +57,20 @@ describe('PlanetCard', () => {
     expect(screen.getByRole('button', { name: 'Learn More' })).toBeInTheDocument();
   });
 
+  it('rounds its stats to the figures the planet page shows', () => {
+    renderCard(SCORED);
+
+    expect(screen.getByText('370.5 pc')).toBeInTheDocument();
+    expect(screen.getByText('1.34 \u00d7 Earth')).toBeInTheDocument();
+  });
+
+  it('reports an unmeasured stat as N/A without stranding its unit', () => {
+    renderCard({ ...SCORED, sy_dist: null, pl_rade: null });
+
+    expect(screen.getAllByText('N/A')).toHaveLength(2);
+    expect(screen.queryByText(/N\/A\s*(pc|\u00d7)/)).not.toBeInTheDocument();
+  });
+
   // The emoji stands in for planet imagery; announcing "ringed planet" says nothing about this planet.
   it('hides the decorative planet glyph from assistive tech', () => {
     renderCard(SCORED);

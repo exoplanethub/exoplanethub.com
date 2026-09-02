@@ -139,22 +139,20 @@ describe('PlanetTable rendering', () => {
     expect(renderedNames()).toEqual(expect.arrayContaining(['Alpha b', 'Beta c', 'Gamma d']));
   });
 
-  it('formats radius and distance to two decimal places', () => {
+  it('rounds radius and distance to the figures the planet page shows', () => {
     renderTable({ planets: [ALPHA] });
 
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
-    expect(cells[3]).toHaveTextContent('1.23× Earth');
+    expect(cells[3]).toHaveTextContent('1.234 × Earth');
     expect(cells[4]).toHaveTextContent('12.35 pc');
   });
 
-  it('falls back to N/A for missing values', () => {
-    renderTable({ planets: [makePlanet({ pl_name: 'Sparse b', hostname: '', pl_rade: 0, sy_dist: 0, discoverymethod: '' })] });
+  it('falls back to N/A for blank text the archive sends', () => {
+    renderTable({ planets: [makePlanet({ pl_name: 'Sparse b', hostname: '', discoverymethod: '' })] });
 
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
     expect(cells[1]).toHaveTextContent('N/A');
     expect(cells[2]).toHaveTextContent('N/A');
-    expect(cells[3]).toHaveTextContent('N/A× Earth');
-    expect(cells[4]).toHaveTextContent('N/A pc');
   });
 
   // NASA omits pl_eqt on 72% of rows and pl_rade on 25%; the sync stores those as null.
@@ -164,8 +162,17 @@ describe('PlanetTable rendering', () => {
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
     expect(cells[1]).toHaveTextContent('N/A');
     expect(cells[2]).toHaveTextContent('N/A');
-    expect(cells[3]).toHaveTextContent('N/A× Earth');
-    expect(cells[4]).toHaveTextContent('N/A pc');
+    expect(cells[3]).toHaveTextContent('N/A');
+    expect(cells[4]).toHaveTextContent('N/A');
+  });
+
+  // A falsy check used to call a measured zero missing, contradicting the page.
+  it('keeps a zero reading rather than reporting it as unknown', () => {
+    renderTable({ planets: [makePlanet({ pl_name: 'Zero b', pl_rade: 0, sy_dist: 0 })] });
+
+    const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
+    expect(cells[3]).toHaveTextContent('0 × Earth');
+    expect(cells[4]).toHaveTextContent('0 pc');
   });
 });
 

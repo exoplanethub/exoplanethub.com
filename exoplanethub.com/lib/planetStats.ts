@@ -1,4 +1,4 @@
-import type { Planet } from '@/lib/mockPlanets';
+import type { Planet, PlanetSummary } from '@/lib/mockPlanets';
 import { starBandOf } from '@/lib/starBands';
 
 export interface PlanetStat {
@@ -23,7 +23,7 @@ function isMeasured(value: number | null | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function measurement(value: number | null, unit: string): string | null {
+export function measurement(value: number | null, unit: string): string | null {
   return isMeasured(value) ? `${NUMBER.format(value)} ${unit}` : null;
 }
 
@@ -70,6 +70,18 @@ export function planetHighlights(planet: Planet): string[] {
     highlight(planet.pl_orbper, (days) => `${days}-day orbit`),
     lightYearsAway(planet.sy_dist),
   ].filter((phrase): phrase is string => phrase !== null);
+}
+
+// Shares the section formatters so the quick look cannot round a field differently from the page it links to.
+export function planetKeyStats(planet: PlanetSummary): PlanetStat[] {
+  return [
+    { label: 'Distance', value: measurement(planet.sy_dist, 'parsecs') },
+    { label: 'Radius', value: measurement(planet.pl_rade, '× Earth') },
+    { label: 'Mass', value: measurement(planet.pl_bmasse, '× Earth') },
+    { label: 'Temperature', value: measurement(planet.pl_eqt, 'K') },
+    { label: 'Discovered', value: exact(planet.disc_year) },
+    { label: 'Detection Method', value: text(planet.discoverymethod) },
+  ];
 }
 
 export function planetStatSections(planet: Planet): PlanetStatSection[] {

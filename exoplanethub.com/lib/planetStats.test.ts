@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Planet } from '@/lib/mockPlanets';
-import { planetHighlights, planetStatSections, type PlanetStat } from '@/lib/planetStats';
+import {
+  planetHighlights,
+  planetKeyStats,
+  planetStatSections,
+  type PlanetStat,
+} from '@/lib/planetStats';
 
 const UNMEASURED: Planet = {
   pl_name: 'Kepler-452 b',
@@ -186,5 +191,64 @@ describe('planetHighlights', () => {
     ['Infinity', Infinity],
   ])('skips a %s radius rather than quoting it', (_case, corrupt) => {
     expect(highlightsOf({ pl_rade: corrupt })).toEqual([]);
+  });
+});
+
+const QUICK_LOOK: Planet = {
+  ...UNMEASURED,
+  sy_dist: 551.7,
+  pl_rade: 1.63,
+  pl_bmasse: 5,
+  pl_eqt: 265,
+  disc_year: 2015,
+  discoverymethod: 'Transit',
+};
+
+function keyStatOf(label: string, planet: Planet = QUICK_LOOK): string | null {
+  const stat = planetKeyStats(planet).find((candidate) => candidate.label === label);
+  if (!stat) throw new Error(`No quick-look stat labelled "${label}"`);
+  return stat.value;
+}
+
+describe('planetKeyStats', () => {
+  it('carries the six fields the quick look has room for, in reading order', () => {
+    expect(planetKeyStats(QUICK_LOOK).map((stat) => stat.label)).toEqual([
+      'Distance',
+      'Radius',
+      'Mass',
+      'Temperature',
+      'Discovered',
+      'Detection Method',
+    ]);
+  });
+
+  // The quick look links straight to the page, so one field must never show two numbers.
+  it.each([
+    ['Radius', 'Radius'],
+    ['Mass', 'Mass'],
+    ['Temperature', 'Equilibrium temperature'],
+    ['Discovered', 'Year'],
+    ['Detection Method', 'Method'],
+  ])('renders %s exactly as the page section renders it', (quickLabel, sectionLabel) => {
+    expect(keyStatOf(quickLabel)).toBe(valueOf(sectionLabel, QUICK_LOOK));
+  });
+
+  it('quotes the same parsec figure the page prints beside light-years', () => {
+    expect(valueOf('Distance from Earth', QUICK_LOOK)).toContain(keyStatOf('Distance'));
+  });
+
+  it('reports every field of a name-only planet as unknown', () => {
+    expect(planetKeyStats(UNMEASURED).every((stat) => stat.value === null)).toBe(true);
+  });
+
+  it('keeps a measured zero, which a falsy check would have called unknown', () => {
+    expect(keyStatOf('Temperature', { ...QUICK_LOOK, pl_eqt: 0 })).toBe('0 K');
+  });
+
+  it.each([
+    ['NaN', NaN],
+    ['Infinity', Infinity],
+  ])('reports a %s distance as unknown rather than quoting it', (_case, corrupt) => {
+    expect(keyStatOf('Distance', { ...QUICK_LOOK, sy_dist: corrupt })).toBeNull();
   });
 });

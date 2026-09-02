@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { PlanetSummary } from '@/lib/mockPlanets';
 import PlanetNameLink from '@/components/planet/PlanetNameLink';
 import { SortKey, SortOrder } from '@/lib/planetFilters';
+import { measurement } from '@/lib/planetStats';
 import { Pagination } from '@/lib/usePagination';
 import ESIInfoButton from './ESIInfoButton';
 import PaginationControls from './PaginationControls';
@@ -126,8 +127,8 @@ export default function PlanetTable({ planets, pagination, onPlanetClick, sortKe
                 </td>
                 <td>{planet.hostname || 'N/A'}</td>
                 <td>{planet.discoverymethod || 'N/A'}</td>
-                <td>{planet.pl_rade ? planet.pl_rade.toFixed(2) : 'N/A'}× Earth</td>
-                <td>{planet.sy_dist ? planet.sy_dist.toFixed(2) : 'N/A'} pc</td>
+                <td>{measurement(planet.pl_rade, '× Earth') ?? 'N/A'}</td>
+                <td>{measurement(planet.sy_dist, 'pc') ?? 'N/A'}</td>
                 <td>{planet.disc_year || 'N/A'}</td>
                 <td className={styles.esiCell}><ESIScore score={planet.esi} /></td>
               </tr>
