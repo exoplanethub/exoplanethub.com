@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/layout/NavBar";
-import { generateCSSVariables } from "@/lib/theme";
+import { generateCSSVariables, SITE_THEME } from "@/lib/theme";
 import { SITE_ORIGIN } from "@/lib/site";
-// Push
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -30,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${poppins.variable}`} style={generateCSSVariables('nautilus')}>
+      <body className={`${inter.variable} ${poppins.variable}`} style={generateCSSVariables(SITE_THEME)}>
         <NavBar />
         {children}
       </body>

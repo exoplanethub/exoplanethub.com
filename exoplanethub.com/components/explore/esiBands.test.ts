@@ -12,6 +12,7 @@ describe('ESI_BANDS', () => {
 
     expect(boundaries).toEqual([...boundaries].sort((a, b) => b - a));
     expect(boundaries[boundaries.length - 1]).toBe(0);
+    expect(ESI_BANDS.map((band) => band.tier)).toEqual([1, 2, 3, 4]);
   });
 
   it('styles every band with custom properties the theme actually defines', () => {

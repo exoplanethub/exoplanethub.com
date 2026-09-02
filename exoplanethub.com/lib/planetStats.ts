@@ -55,14 +55,20 @@ function highlight(value: number | null, phrase: (amount: string) => string): st
   return isMeasured(value) ? phrase(NUMBER.format(value)) : null;
 }
 
+export function lightYearsAway(parsecs: number | null): string | null {
+  return isMeasured(parsecs) ? `${NUMBER.format(lightYearsFrom(parsecs))} light-years away` : null;
+}
+
+export function discoveredIn(year: number | null): string | null {
+  return isMeasured(year) ? `Discovered in ${year}` : null;
+}
+
 // Same numbers as the sections below, so a link preview can never quote a figure the page contradicts.
 export function planetHighlights(planet: Planet): string[] {
-  const distance = isMeasured(planet.sy_dist) ? lightYearsFrom(planet.sy_dist) : null;
-
   return [
     highlight(planet.pl_rade, (radius) => `${radius}× Earth's radius`),
     highlight(planet.pl_orbper, (days) => `${days}-day orbit`),
-    highlight(distance, (lightYears) => `${lightYears} light-years away`),
+    lightYearsAway(planet.sy_dist),
   ].filter((phrase): phrase is string => phrase !== null);
 }
 
