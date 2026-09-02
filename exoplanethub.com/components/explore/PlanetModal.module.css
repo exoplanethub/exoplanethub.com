@@ -141,3 +141,26 @@
     grid-template-columns: 1fr;
   }
 }
+
+.fullProfile {
+  display: block;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  border-radius: 999px;
+  padding: 12px 24px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.fullProfile:hover {
+  background: var(--color-accent);
+  color: var(--color-background);
+}
+
+.fullProfile:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

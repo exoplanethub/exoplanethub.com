@@ -1,0 +1,176 @@
+.page {
+  min-height: 100vh;
+  background: var(--color-background);
+  padding: 120px 24px 64px;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.header {
+  margin: 0 0 40px;
+  text-align: center;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 12px;
+}
+
+.summary {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px 32px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.statLabel {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.statValue {
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--color-text);
+}
+
+.comparisons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comparison {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 4px 24px;
+  align-items: baseline;
+}
+
+.comparisonDetail {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .comparison {
+    grid-template-columns: 1fr;
+  }
+}
+
+.provenance {
+  margin: 32px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.provenanceLink {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.provenanceLink:hover {
+  color: var(--color-accent);
+}
+
+.provenanceLink:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.action {
+  display: block;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 12px 24px;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  color: var(--color-primary-contrast);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.actions .action {
+  margin: 0;
+}
+
+.action:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.actionQuiet {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.actionQuiet:hover {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 32px;
+  }
+}

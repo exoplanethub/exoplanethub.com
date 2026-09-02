@@ -39,6 +39,38 @@ describe('PlanetCard', () => {
     expect(screen.getByRole('button', { name: 'Learn More' })).toBeInTheDocument();
   });
 
+  it('links the name to the planet page, encoding names that need it', () => {
+    renderCard(SCORED);
+
+    expect(screen.getByRole('link', { name: 'Kepler-442 b' })).toHaveAttribute(
+      'href',
+      '/planet/Kepler-442%20b',
+    );
+  });
+
+  // Decision 5 keeps the two-control pattern in the table; the card's button still only opens the modal.
+  it('keeps Learn More as the modal control rather than a second link', () => {
+    const onClick = vi.fn();
+    render(<PlanetCard planet={SCORED} onClick={onClick} />);
+
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Learn More' })).toBeInTheDocument();
+  });
+
+  it('rounds its stats to the figures the planet page shows', () => {
+    renderCard(SCORED);
+
+    expect(screen.getByText('370.5 pc')).toBeInTheDocument();
+    expect(screen.getByText('1.34 \u00d7 Earth')).toBeInTheDocument();
+  });
+
+  it('reports an unmeasured stat as N/A without stranding its unit', () => {
+    renderCard({ ...SCORED, sy_dist: null, pl_rade: null });
+
+    expect(screen.getAllByText('N/A')).toHaveLength(2);
+    expect(screen.queryByText(/N\/A\s*(pc|\u00d7)/)).not.toBeInTheDocument();
+  });
+
   // The emoji stands in for planet imagery; announcing "ringed planet" says nothing about this planet.
   it('hides the decorative planet glyph from assistive tech', () => {
     renderCard(SCORED);

@@ -39,6 +39,17 @@ view can be shared, bookmarked and reloaded unchanged.
 - Filter by star type
 - Persist all filter and sort state in URL params
 
+### 4. Shareable Planet Pages
+Give every confirmed planet a permanent, server-rendered address that reads clearly to a
+non-astronomer and unfurls with a real preview wherever the link is shared.
+
+**Tasks:**
+- Server-rendered `/planet/<name>` with grouped planet, star, system and discovery sections
+- Plain-language Earth comparison alongside the ESI badge
+- Per-planet titles, descriptions and link-preview images
+- Link planet names from the table, cards, modal and Latest Discoveries
+- Sitemap and robots entries so the pages are indexable
+
 ## Future Ideas
 
 - 3D visualization of exoplanet systems

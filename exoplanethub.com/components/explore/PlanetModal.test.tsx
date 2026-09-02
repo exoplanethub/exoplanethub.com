@@ -96,13 +96,13 @@ describe('PlanetModal accessibility (#6)', () => {
 });
 
 describe('PlanetModal content', () => {
-  it('reports the statistics NASA supplied, rounded for reading', async () => {
+  it('reports the statistics NASA supplied, formatted as the planet page formats them', async () => {
     const { dialog } = await openModal();
 
-    expect(within(dialog).getByText('178.50 parsecs')).toBeInTheDocument();
-    expect(within(dialog).getByText('1.17× Earth')).toBeInTheDocument();
-    expect(within(dialog).getByText('1.71× Earth')).toBeInTheDocument();
-    expect(within(dialog).getByText('188K')).toBeInTheDocument();
+    expect(within(dialog).getByText('178.5 parsecs')).toBeInTheDocument();
+    expect(within(dialog).getByText('1.17 × Earth')).toBeInTheDocument();
+    expect(within(dialog).getByText('1.71 × Earth')).toBeInTheDocument();
+    expect(within(dialog).getByText('188 K')).toBeInTheDocument();
     expect(within(dialog).getByText('Orbits Kepler-186')).toBeInTheDocument();
   });
 
@@ -116,7 +116,54 @@ describe('PlanetModal content', () => {
       disc_year: null,
     });
 
-    expect(within(dialog).getByText('N/A parsecs')).toBeInTheDocument();
+    expect(within(dialog).getAllByText('N/A')).toHaveLength(4);
     expect(within(dialog).getByText('Orbits Unknown')).toBeInTheDocument();
+  });
+
+  // The unit used to sit outside the fallback, so an unknown distance read "N/A parsecs".
+  it('drops the unit with the value rather than labelling an unknown', async () => {
+    const { dialog } = await openModal({ ...KEPLER, sy_dist: null });
+
+    expect(within(dialog).queryByText(/N\/A\s*parsecs/)).not.toBeInTheDocument();
+  });
+
+  // A measured zero is data, not a missing field.
+  it('keeps a zero reading instead of reporting it as unknown', async () => {
+    const { dialog } = await openModal({ ...KEPLER, pl_eqt: 0 });
+
+    expect(within(dialog).getByText('0 K')).toBeInTheDocument();
+  });
+});
+
+describe('PlanetModal full profile link (#68)', () => {
+  it('offers the planet page as the next step out of the quick look', async () => {
+    const { dialog } = await openModal();
+
+    expect(within(dialog).getByRole('link', { name: 'View full profile' })).toHaveAttribute(
+      'href',
+      '/planet/Kepler-186%20f',
+    );
+  });
+
+  it('is a link rather than a button, so middle-click and copy-link work', async () => {
+    const { dialog } = await openModal();
+
+    expect(within(dialog).getByRole('link', { name: 'View full profile' }).tagName).toBe('A');
+  });
+
+  // The dialog had one focus stop before this link; the trap has to keep cycling both.
+  it('is reachable by Tab inside the focus trap', async () => {
+    const { user, dialog } = await openModal();
+    const close = within(dialog).getByRole('button', { name: 'Close' });
+    const fullProfile = within(dialog).getByRole('link', { name: 'View full profile' });
+
+    await user.tab();
+    expect(close).toHaveFocus();
+
+    await user.tab();
+    expect(fullProfile).toHaveFocus();
+
+    await user.tab();
+    expect(close).toHaveFocus();
   });
 });

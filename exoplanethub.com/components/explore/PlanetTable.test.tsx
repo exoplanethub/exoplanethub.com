@@ -81,11 +81,12 @@ function renderTable(props: HarnessProps = {}) {
   };
 }
 
+// Reads the name link rather than the whole cell, which also holds the quick-view control.
 function renderedNames() {
   return screen
     .getAllByRole('row')
     .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[0].textContent);
+    .map((row) => within(row).getByRole('link').textContent);
 }
 
 function sortControl(name: RegExp) {
@@ -101,8 +102,12 @@ const SORTABLE_COLUMNS: [RegExp, SortKey][] = [
   [/esi/i, 'esi'],
 ];
 
-function rowTrigger(name: string) {
-  return screen.getByRole('button', { name });
+function nameLink(name: string) {
+  return screen.getByRole('link', { name });
+}
+
+function quickViewButton(name: string) {
+  return screen.getByRole('button', { name: `Quick view: ${name}` });
 }
 
 function esiHeader() {
@@ -134,22 +139,20 @@ describe('PlanetTable rendering', () => {
     expect(renderedNames()).toEqual(expect.arrayContaining(['Alpha b', 'Beta c', 'Gamma d']));
   });
 
-  it('formats radius and distance to two decimal places', () => {
+  it('rounds radius and distance to the figures the planet page shows', () => {
     renderTable({ planets: [ALPHA] });
 
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
-    expect(cells[3]).toHaveTextContent('1.23× Earth');
+    expect(cells[3]).toHaveTextContent('1.234 × Earth');
     expect(cells[4]).toHaveTextContent('12.35 pc');
   });
 
-  it('falls back to N/A for missing values', () => {
-    renderTable({ planets: [makePlanet({ pl_name: 'Sparse b', hostname: '', pl_rade: 0, sy_dist: 0, discoverymethod: '' })] });
+  it('falls back to N/A for blank text the archive sends', () => {
+    renderTable({ planets: [makePlanet({ pl_name: 'Sparse b', hostname: '', discoverymethod: '' })] });
 
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
     expect(cells[1]).toHaveTextContent('N/A');
     expect(cells[2]).toHaveTextContent('N/A');
-    expect(cells[3]).toHaveTextContent('N/A× Earth');
-    expect(cells[4]).toHaveTextContent('N/A pc');
   });
 
   // NASA omits pl_eqt on 72% of rows and pl_rade on 25%; the sync stores those as null.
@@ -159,8 +162,17 @@ describe('PlanetTable rendering', () => {
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
     expect(cells[1]).toHaveTextContent('N/A');
     expect(cells[2]).toHaveTextContent('N/A');
-    expect(cells[3]).toHaveTextContent('N/A× Earth');
-    expect(cells[4]).toHaveTextContent('N/A pc');
+    expect(cells[3]).toHaveTextContent('N/A');
+    expect(cells[4]).toHaveTextContent('N/A');
+  });
+
+  // A falsy check used to call a measured zero missing, contradicting the page.
+  it('keeps a zero reading rather than reporting it as unknown', () => {
+    renderTable({ planets: [makePlanet({ pl_name: 'Zero b', pl_rade: 0, sy_dist: 0 })] });
+
+    const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
+    expect(cells[3]).toHaveTextContent('0 × Earth');
+    expect(cells[4]).toHaveTextContent('0 pc');
   });
 });
 
@@ -296,9 +308,66 @@ describe('PlanetTable selection', () => {
     const user = userEvent.setup();
     const { onPlanetClick } = renderTable();
 
-    await user.click(screen.getByText('Alpha b'));
+    await user.click(screen.getByText('Ross 128'));
 
     expect(onPlanetClick).toHaveBeenCalledWith(ALPHA);
+  });
+});
+
+describe('PlanetTable planet links (#68)', () => {
+  it('links each name to its planet page, encoding names that need it', () => {
+    renderTable();
+
+    expect(nameLink('Alpha b')).toHaveAttribute('href', '/planet/Alpha%20b');
+  });
+
+  it('renders a real anchor, so middle-click and copy-link work', () => {
+    renderTable({ planets: [ALPHA] });
+
+    expect(nameLink('Alpha b').tagName).toBe('A');
+  });
+
+  // Decision 5: the name navigates, so it must not also fire the row's modal handler.
+  it('does not open the modal when the name link is clicked', async () => {
+    const user = userEvent.setup();
+    const { onPlanetClick } = renderTable();
+
+    await user.click(nameLink('Alpha b'));
+
+    expect(onPlanetClick).not.toHaveBeenCalled();
+  });
+
+  it('gives every row both a navigation and a quick-look control, labelled apart', () => {
+    renderTable();
+
+    for (const name of ['Alpha b', 'Beta c', 'Gamma d']) {
+      expect(nameLink(name)).toBeInTheDocument();
+      expect(quickViewButton(name)).toBeInTheDocument();
+    }
+  });
+
+  // One icon-sized control per row would be unlabelled without this; the name disambiguates it.
+  it('names the quick-look control after its planet rather than repeating one generic label', () => {
+    renderTable();
+
+    expect(quickViewButton('Alpha b')).toHaveAccessibleName('Quick view: Alpha b');
+    expect(screen.getAllByRole('button', { name: /^Quick view: / })).toHaveLength(3);
+  });
+
+  it('keeps the quick-look control out of the accessible name of the row', () => {
+    renderTable({ planets: [ALPHA] });
+    const cell = within(screen.getAllByRole('row')[1]).getAllByRole('cell')[0];
+
+    expect(within(cell).getByRole('button')).toHaveTextContent('');
+    expect(cell.textContent).toBe('Alpha b');
+  });
+
+  it('leaves the quick-look icon out of the control\u2019s accessible name', () => {
+    renderTable({ planets: [ALPHA] });
+    const icon = quickViewButton('Alpha b').querySelector('svg');
+
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
+    expect(quickViewButton('Alpha b')).toHaveAccessibleName('Quick view: Alpha b');
   });
 });
 
@@ -337,7 +406,7 @@ describe('PlanetTable accessibility (#6)', () => {
     const user = userEvent.setup();
     const { onPlanetClick } = renderTable();
 
-    rowTrigger('Beta c').focus();
+    quickViewButton('Beta c').focus();
     await user.keyboard('{Enter}');
 
     expect(onPlanetClick).toHaveBeenCalledWith(BETA);
@@ -354,7 +423,7 @@ describe('PlanetTable accessibility (#6)', () => {
     const user = userEvent.setup();
     const { onPlanetClick } = renderTable();
 
-    await user.click(rowTrigger('Alpha b'));
+    await user.click(quickViewButton('Alpha b'));
 
     expect(onPlanetClick).toHaveBeenCalledTimes(1);
     expect(onPlanetClick).toHaveBeenCalledWith(ALPHA);

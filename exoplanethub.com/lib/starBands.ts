@@ -28,8 +28,12 @@ export function isStarClass(value: string): value is StarClass {
 
 // Cooler than M, or never measured, is unclassified rather than M: calling a brown dwarf a red
 // dwarf is exactly the quiet wrongness a curious visitor would catch.
-export function starClassOf(teff: number | null): StarClass | null {
+export function starBandOf(teff: number | null): StarBand | null {
   if (teff === null || !Number.isFinite(teff)) return null;
 
-  return BANDS.find((band) => teff >= band.minTeff)?.starClass ?? null;
+  return BANDS.find((band) => teff >= band.minTeff) ?? null;
+}
+
+export function starClassOf(teff: number | null): StarClass | null {
+  return starBandOf(teff)?.starClass ?? null;
 }

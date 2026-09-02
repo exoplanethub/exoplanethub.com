@@ -7,6 +7,7 @@ import {
   cardNames,
   emptyState,
   makePlanet,
+  quickViewButton,
   renderExplore,
   resultsCount,
   searchBox,
@@ -154,7 +155,7 @@ describe('ExploreClient view toggle', () => {
   it('opens the planet dialog from the table, the default view', async () => {
     const { user } = renderExplore([ALPHA]);
 
-    await user.click(screen.getByRole('button', { name: 'Alpha b' }));
+    await user.click(quickViewButton('Alpha b'));
 
     expect(screen.getByRole('dialog')).toHaveAccessibleName('Alpha b');
   });
