@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Planet } from '@/lib/mockPlanets';
 import { planetMetadata } from '@/lib/planetMetadata';
+import { SHARE_IMAGE_SIZE } from '@/lib/shareImage';
 
 const NAME_ONLY: Planet = {
   pl_name: 'Kepler-452 b',
@@ -35,6 +36,13 @@ const KEPLER_452B: Planet = {
 
 function describedAs(planet: Partial<Planet>): string {
   return String(planetMetadata({ ...NAME_ONLY, ...planet }).description);
+}
+
+function shareImageOf(planet: Planet) {
+  const images = planetMetadata(planet).openGraph?.images;
+  if (!Array.isArray(images)) throw new Error('expected planetMetadata to name one share image');
+
+  return images[0] as { url: string; alt: string; width: number; height: number };
 }
 
 describe('planetMetadata titles', () => {
@@ -107,6 +115,17 @@ describe('planetMetadata link preview', () => {
     expect(planetMetadata(KEPLER_452B).twitter).toMatchObject({ card: 'summary_large_image' });
   });
 
+  it('names the planet in the image alt a screen reader announces for a shared link', () => {
+    expect(shareImageOf(KEPLER_452B).alt).toContain('Kepler-452 b');
+  });
+
+  it('points the card at the planet it belongs to, at the size that route draws', () => {
+    const image = shareImageOf(KEPLER_452B);
+
+    expect(image.url).toBe('/planet/Kepler-452%20b/opengraph-image');
+    expect(image).toMatchObject(SHARE_IMAGE_SIZE);
+  });
+
   it('gives the card the same sentence as the meta description', () => {
     const { description, openGraph, twitter } = planetMetadata(KEPLER_452B);
 
@@ -129,5 +148,10 @@ describe('planetMetadata for a planet we do not hold', () => {
 
     expect(missing.alternates).toBeUndefined();
     expect(missing.openGraph).toBeUndefined();
+  });
+
+  // Leaving openGraph unset is what lets the file convention answer with the branded card.
+  it('names no share image, so the unfurl falls back to the branded card', () => {
+    expect(planetMetadata(null).openGraph?.images).toBeUndefined();
   });
 });

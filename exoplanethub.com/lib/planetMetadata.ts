@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { Planet } from '@/lib/mockPlanets';
 import { planetHighlights } from '@/lib/planetStats';
 import { planetUrl } from '@/lib/planetUrl';
+import { SHARE_IMAGE_SIZE, shareImageAlt, shareImageUrl } from '@/lib/shareImage';
 
 const SITE_NAME = 'ExoplanetHub';
 
@@ -32,7 +33,17 @@ export function planetMetadata(planet: Planet | null): Metadata {
     title: `${title} | ${SITE_NAME}`,
     description,
     alternates: { canonical: url },
-    openGraph: { type: 'website', siteName: SITE_NAME, title, description, url },
+    // Set here, not left to the file convention, whose alt is one constant for every planet.
+    openGraph: {
+      type: 'website',
+      siteName: SITE_NAME,
+      title,
+      description,
+      url,
+      images: [
+        { url: shareImageUrl(planet.pl_name), ...SHARE_IMAGE_SIZE, alt: shareImageAlt(planet.pl_name) },
+      ],
+    },
     twitter: { card: 'summary_large_image', title, description },
   };
 }

@@ -1,17 +1,19 @@
 import { ImageResponse } from 'next/og';
 import { getPlanetDetail } from '@/lib/planetDetail';
 import { planetNameFromParam } from '@/lib/planetUrl';
+import { SHARE_IMAGE_SIZE } from '@/lib/shareImage';
 import { getTheme, SITE_THEME } from '@/lib/theme';
 import { shareCard, type ShareCardBadge } from './shareCard';
 
 export const revalidate = 3600;
 
-export const size = { width: 1200, height: 630 };
+export const size = SHARE_IMAGE_SIZE;
 
 export const contentType = 'image/png';
 
-// Next only accepts a constant here, so it describes the card rather than naming the planet.
-export const alt = 'ExoplanetHub planet profile card';
+// Only the not-found card falls back to this; a found planet's alt is named in its page metadata.
+// generateImageMetadata could name it here, but it adds an /<id> segment and flips this route to SSG.
+export const alt = "ExoplanetHub — explore confirmed exoplanets from NASA's Exoplanet Archive";
 
 const { colors } = getTheme(SITE_THEME);
 

@@ -23,6 +23,7 @@ export default function LatestDiscoveries() {
   );
 }
 
+// Exported for its test only: rendering it directly skips the Suspense boundary above.
 export async function DiscoveryList() {
   // Defers this subtree to request time so a failed query costs one response, not a cached page.
   await connection();
