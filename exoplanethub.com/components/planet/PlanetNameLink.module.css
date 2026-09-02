@@ -1,0 +1,15 @@
+/* Underlined at rest, not on hover: on touch there is no hover, so a colour-only link is invisible. */
+.link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link:hover {
+  color: var(--color-accent);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

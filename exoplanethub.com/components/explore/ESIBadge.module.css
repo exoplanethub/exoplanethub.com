@@ -1,14 +1,8 @@
-/* Absolute so a card without a score reserves no space and its layout is untouched. */
 .badge {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  max-width: calc(100% - 32px);
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 8px;
-  padding: 8px 14px;
   border: none;
   border-radius: 999px;
   cursor: pointer;
@@ -19,6 +13,27 @@
 
 .badge:hover {
   transform: scale(1.04);
+}
+
+.badge:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Absolute so a card without a score reserves no space and its layout is untouched. */
+.card {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+}
+
+.page {
+  display: inline-flex;
+  margin-top: 20px;
+  padding: 12px 22px;
+  gap: 12px;
 }
 
 .score {
@@ -32,4 +47,12 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.3px;
+}
+
+.page .score {
+  font-size: 22px;
+}
+
+.page .band {
+  font-size: 14px;
 }

@@ -78,13 +78,17 @@ describe('GET /api/planets', () => {
 });
 
 describe('GET /api/planets projection', () => {
-  it('projects esi so the badge has a score to render', async () => {
+  it.each([
+    ['esi', 'the badge has a score to render'],
+    ['pl_orbper', 'the orbital period range filter has a value to compare'],
+    ['st_teff', 'the star type filter has a temperature to band'],
+  ])('projects %s, so %s', async (field) => {
     send.mockResolvedValue({ Items: [] });
     const GET = await importRouteWithCurrentEnv();
 
     await GET();
 
-    expect(projectedFields(scanInputs()[0])).toContain('esi');
+    expect(projectedFields(scanInputs()[0])).toContain(field);
   });
 
   it('projects exactly the shared summary field list', async () => {

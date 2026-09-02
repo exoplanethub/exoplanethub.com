@@ -1,17 +1,21 @@
+export type ESIBandTier = 1 | 2 | 3 | 4;
+
 export interface ESIBand {
   minScore: number;
   range: string;
   label: string;
   description: string;
+  // Selects the theme's esiBand<tier> colour pair, for renderers that cannot resolve a custom property.
+  tier: ESIBandTier;
   style: { background: string; color: string };
 }
 
 const BAND_DEFINITIONS = [
-  { minScore: 85, label: 'Highly Earth-like', description: 'Close to Earth in size, temperature, and mass' },
-  { minScore: 70, label: 'Good similarity', description: 'Broadly Earth-like across the measured properties' },
-  { minScore: 50, label: 'Moderate similarity', description: 'Some properties resemble Earth, others differ sharply' },
-  { minScore: 0, label: 'Low similarity', description: 'Little resemblance to Earth in the measured properties' },
-];
+  { minScore: 85, tier: 1, label: 'Highly Earth-like', description: 'Close to Earth in size, temperature, and mass' },
+  { minScore: 70, tier: 2, label: 'Good similarity', description: 'Broadly Earth-like across the measured properties' },
+  { minScore: 50, tier: 3, label: 'Moderate similarity', description: 'Some properties resemble Earth, others differ sharply' },
+  { minScore: 0, tier: 4, label: 'Low similarity', description: 'Little resemblance to Earth in the measured properties' },
+] as const;
 
 const MAX_SCORE = 100;
 
@@ -26,8 +30,8 @@ export const ESI_BANDS: readonly ESIBand[] = BAND_DEFINITIONS.map((band, index) 
   ...band,
   range: describeRange(index),
   style: {
-    background: `var(--color-esi-band-${index + 1})`,
-    color: `var(--color-esi-band-${index + 1}-text)`,
+    background: `var(--color-esi-band-${band.tier})`,
+    color: `var(--color-esi-band-${band.tier}-text)`,
   },
 }));
 

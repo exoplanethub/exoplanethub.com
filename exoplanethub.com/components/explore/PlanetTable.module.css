@@ -1,35 +1,3 @@
-.controls {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-
-.searchInput {
-  flex: 1;
-  min-width: 250px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 12px 20px;
-  color: var(--color-text);
-  font-size: 14px;
-}
-
-.searchInput::placeholder {
-  color: var(--color-text-muted);
-}
-
-.select {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 12px 20px;
-  color: var(--color-text);
-  font-size: 14px;
-  cursor: pointer;
-}
-
 .tableContainer {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -54,13 +22,8 @@
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  cursor: pointer;
   user-select: none;
   white-space: nowrap;
-}
-
-.table th:hover {
-  color: var(--color-primary);
 }
 
 .table td {
@@ -84,18 +47,47 @@
   color: var(--color-text);
 }
 
-.esiHeaderContent {
+.nameCell {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-.table th.esiHeader {
-  cursor: default;
+.quickView {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
 }
 
-.table th.esiHeader:hover {
-  color: var(--color-text-muted);
+.quickViewIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.quickView:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.quickView:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.headerContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sortButton {
@@ -151,42 +143,6 @@
 .sortIcon {
   margin-left: 4px;
   font-size: 10px;
-}
-
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  margin-top: 24px;
-  padding: 16px;
-}
-
-.paginationBtn {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 8px 16px;
-  color: var(--color-text);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.paginationBtn:hover:not(:disabled) {
-  background: var(--color-primary);
-  color: var(--color-primary-contrast);
-  border-color: var(--color-primary);
-}
-
-.paginationBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pageInfo {
-  color: var(--color-text-muted);
-  font-size: 14px;
 }
 
 @media (max-width: 768px) {

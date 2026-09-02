@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { connection } from 'next/server';
 import { fetchLatestDiscoveries } from '@/lib/latestDiscoveries';
+import PlanetNameLink from '@/components/planet/PlanetNameLink';
 import styles from './LatestDiscoveries.module.css';
 
 const HEADING_ID = 'latest-discoveries-heading';
@@ -22,7 +23,8 @@ export default function LatestDiscoveries() {
   );
 }
 
-async function DiscoveryList() {
+// Exported for its test only: rendering it directly skips the Suspense boundary above.
+export async function DiscoveryList() {
   // Defers this subtree to request time so a failed query costs one response, not a cached page.
   await connection();
   const result = await fetchLatestDiscoveries();
@@ -43,7 +45,9 @@ async function DiscoveryList() {
     <ol role="list" className={styles.list}>
       {result.planets.map((planet) => (
         <li key={planet.pl_name} className={styles.item}>
-          <h3 className={styles.name}>{planet.pl_name}</h3>
+          <h3 className={styles.name}>
+            <PlanetNameLink name={planet.pl_name} />
+          </h3>
           <dl className={styles.facts}>
             <Fact label="Host star" value={planet.hostname} />
             <Fact label="Discovered" value={planet.disc_year} />

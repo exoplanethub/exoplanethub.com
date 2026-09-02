@@ -2,7 +2,9 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Planet } from '@/lib/mockPlanets';
+import type { SortKey, SortOrder } from '@/lib/planetFilters';
 import PlanetTable from '@/components/explore/PlanetTable';
+import { usePagination } from '@/lib/usePagination';
 import { getESIBand } from '@/components/explore/esiBands';
 
 function makePlanet(overrides: Partial<Planet> & Pick<Planet, 'pl_name'>): Planet {
@@ -36,35 +38,76 @@ const ALPHA = makePlanet({ pl_name: 'Alpha b', hostname: 'Ross 128', disc_year: 
 const BETA = makePlanet({ pl_name: 'Beta c', hostname: 'Kepler-186', disc_year: 2021, discoverymethod: 'Radial Velocity' });
 const GAMMA = makePlanet({ pl_name: 'Gamma d', hostname: 'Wolf 359', disc_year: 2008 });
 
-function renderTable(props: Partial<React.ComponentProps<typeof PlanetTable>> = {}) {
-  const onPageChange = vi.fn();
-  const onPlanetClick = vi.fn();
+type TableProps = React.ComponentProps<typeof PlanetTable>;
+type HarnessProps = Omit<Partial<TableProps>, 'pagination'> & { itemsPerPage?: number };
 
-  render(
+// Driven by the real hook rather than a stub, so paging here exercises the contract the table is given.
+function TableHarness({
+  itemsPerPage = 10,
+  planets = [ALPHA, BETA, GAMMA],
+  sortKey = 'disc_year',
+  sortOrder = 'desc',
+  onPlanetClick = () => {},
+  onSort = () => {},
+}: HarnessProps) {
+  const pagination = usePagination(planets.length, itemsPerPage);
+
+  return (
     <PlanetTable
-      planets={[ALPHA, BETA, GAMMA]}
-      page={1}
-      itemsPerPage={10}
-      onPageChange={onPageChange}
+      planets={planets}
+      pagination={pagination}
+      sortKey={sortKey}
+      sortOrder={sortOrder}
       onPlanetClick={onPlanetClick}
-      {...props}
+      onSort={onSort}
     />
   );
-
-  return { onPageChange, onPlanetClick };
 }
 
+function renderTable(props: HarnessProps = {}) {
+  const onPlanetClick = vi.fn();
+  const onSort = vi.fn();
+
+  const withDefaults = (overrides: HarnessProps) => (
+    <TableHarness onPlanetClick={onPlanetClick} onSort={onSort} {...props} {...overrides} />
+  );
+
+  const { rerender } = render(withDefaults({}));
+
+  return {
+    onPlanetClick,
+    onSort,
+    sortBy: (sortKey: SortKey, sortOrder: SortOrder) => rerender(withDefaults({ sortKey, sortOrder })),
+  };
+}
+
+// Reads the name link rather than the whole cell, which also holds the quick-view control.
 function renderedNames() {
   return screen
     .getAllByRole('row')
     .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[0].textContent);
+    .map((row) => within(row).getByRole('link').textContent);
 }
 
-// Sort activation lives on the <th> itself today and moves to an inner button once #6 lands.
 function sortControl(name: RegExp) {
-  const header = screen.getByRole('columnheader', { name });
-  return within(header).queryByRole('button') ?? header;
+  return within(screen.getByRole('columnheader', { name })).getByRole('button', { name });
+}
+
+const SORTABLE_COLUMNS: [RegExp, SortKey][] = [
+  [/planet/i, 'pl_name'],
+  [/method/i, 'discoverymethod'],
+  [/radius/i, 'pl_rade'],
+  [/distance/i, 'sy_dist'],
+  [/discovered/i, 'disc_year'],
+  [/esi/i, 'esi'],
+];
+
+function nameLink(name: string) {
+  return screen.getByRole('link', { name });
+}
+
+function quickViewButton(name: string) {
+  return screen.getByRole('button', { name: `Quick view: ${name}` });
 }
 
 function esiHeader() {
@@ -96,22 +139,20 @@ describe('PlanetTable rendering', () => {
     expect(renderedNames()).toEqual(expect.arrayContaining(['Alpha b', 'Beta c', 'Gamma d']));
   });
 
-  it('formats radius and distance to two decimal places', () => {
+  it('rounds radius and distance to the figures the planet page shows', () => {
     renderTable({ planets: [ALPHA] });
 
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
-    expect(cells[3]).toHaveTextContent('1.23× Earth');
+    expect(cells[3]).toHaveTextContent('1.234 × Earth');
     expect(cells[4]).toHaveTextContent('12.35 pc');
   });
 
-  it('falls back to N/A for missing values', () => {
-    renderTable({ planets: [makePlanet({ pl_name: 'Sparse b', hostname: '', pl_rade: 0, sy_dist: 0, discoverymethod: '' })] });
+  it('falls back to N/A for blank text the archive sends', () => {
+    renderTable({ planets: [makePlanet({ pl_name: 'Sparse b', hostname: '', discoverymethod: '' })] });
 
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
     expect(cells[1]).toHaveTextContent('N/A');
     expect(cells[2]).toHaveTextContent('N/A');
-    expect(cells[3]).toHaveTextContent('N/A× Earth');
-    expect(cells[4]).toHaveTextContent('N/A pc');
   });
 
   // NASA omits pl_eqt on 72% of rows and pl_rade on 25%; the sync stores those as null.
@@ -121,67 +162,36 @@ describe('PlanetTable rendering', () => {
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
     expect(cells[1]).toHaveTextContent('N/A');
     expect(cells[2]).toHaveTextContent('N/A');
-    expect(cells[3]).toHaveTextContent('N/A× Earth');
-    expect(cells[4]).toHaveTextContent('N/A pc');
+    expect(cells[3]).toHaveTextContent('N/A');
+    expect(cells[4]).toHaveTextContent('N/A');
+  });
+
+  // A falsy check used to call a measured zero missing, contradicting the page.
+  it('keeps a zero reading rather than reporting it as unknown', () => {
+    renderTable({ planets: [makePlanet({ pl_name: 'Zero b', pl_rade: 0, sy_dist: 0 })] });
+
+    const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
+    expect(cells[3]).toHaveTextContent('0 × Earth');
+    expect(cells[4]).toHaveTextContent('0 pc');
   });
 });
 
 describe('PlanetTable sorting', () => {
-  it('sorts by discovery year descending before any interaction', () => {
-    renderTable();
+  // Ordering belongs to ExploreClient so both views share it; the table renders what it is handed.
+  it('renders the rows in the order it was handed rather than ordering them itself', () => {
+    renderTable({ planets: [GAMMA, ALPHA, BETA], sortKey: 'pl_name', sortOrder: 'asc' });
 
-    expect(renderedNames()).toEqual(['Beta c', 'Alpha b', 'Gamma d']);
+    expect(renderedNames()).toEqual(['Gamma d', 'Alpha b', 'Beta c']);
   });
 
-  it('reorders rows when a new sort column is chosen, starting descending', async () => {
+  // The owner of the sort state decides the next direction; the table only reports which column was asked for.
+  it('asks its owner to sort by the column whose header was activated', async () => {
     const user = userEvent.setup();
-    renderTable();
+    const { onSort } = renderTable();
 
     await user.click(sortControl(/planet/i));
 
-    expect(renderedNames()).toEqual(['Gamma d', 'Beta c', 'Alpha b']);
-  });
-
-  it('toggles direction when the active sort column is clicked again', async () => {
-    const user = userEvent.setup();
-    renderTable();
-
-    await user.click(sortControl(/planet/i));
-    await user.click(sortControl(/planet/i));
-
-    expect(renderedNames()).toEqual(['Alpha b', 'Beta c', 'Gamma d']);
-  });
-
-  it('sorts planets with no measurement last in both directions', async () => {
-    const user = userEvent.setup();
-    renderTable({
-      planets: [
-        makePlanet({ pl_name: 'Unmeasured', pl_rade: null }),
-        makePlanet({ pl_name: 'Small', pl_rade: 1 }),
-        makePlanet({ pl_name: 'Large', pl_rade: 9 }),
-      ],
-    });
-
-    await user.click(sortControl(/radius/i));
-    expect(renderedNames()).toEqual(['Large', 'Small', 'Unmeasured']);
-
-    await user.click(sortControl(/radius/i));
-    expect(renderedNames()).toEqual(['Small', 'Large', 'Unmeasured']);
-  });
-
-  it('sorts numerically rather than lexicographically', async () => {
-    const user = userEvent.setup();
-    renderTable({
-      planets: [
-        makePlanet({ pl_name: 'Nine', sy_dist: 9 }),
-        makePlanet({ pl_name: 'Eighty', sy_dist: 80 }),
-        makePlanet({ pl_name: 'Hundred', sy_dist: 100 }),
-      ],
-    });
-
-    await user.click(sortControl(/distance/i));
-
-    expect(renderedNames()).toEqual(['Hundred', 'Eighty', 'Nine']);
+    expect(onSort).toHaveBeenCalledWith('pl_name');
   });
 });
 
@@ -207,60 +217,47 @@ describe('PlanetTable ESI column', () => {
     expect(esiCell(1)).not.toHaveTextContent('Not scored');
   });
 
-  it('sorts unscored planets last in both directions, with a real 0 ranked among the scored', async () => {
-    const user = userEvent.setup();
-    renderTable({ planets: [UNSCORED, MIDDLING, ZERO, SCORED] });
-
-    await user.click(esiSortButton());
-    expect(renderedNames()).toEqual(['Scored', 'Middling', 'Zero', 'Unscored']);
-
-    await user.click(esiSortButton());
-    expect(renderedNames()).toEqual(['Zero', 'Middling', 'Scored', 'Unscored']);
-  });
-
-  it('reports its sort state through aria-sort as the direction toggles', async () => {
-    const user = userEvent.setup();
-    renderTable();
+  it('reports its sort state through aria-sort in both directions', () => {
+    const { sortBy } = renderTable();
 
     expect(esiHeader()).toHaveAttribute('aria-sort', 'none');
 
-    await user.click(esiSortButton());
+    sortBy('esi', 'desc');
     expect(esiHeader()).toHaveAttribute('aria-sort', 'descending');
 
-    await user.click(esiSortButton());
+    sortBy('esi', 'asc');
     expect(esiHeader()).toHaveAttribute('aria-sort', 'ascending');
   });
 
-  it('drops back to aria-sort="none" once another column takes over', async () => {
-    const user = userEvent.setup();
-    renderTable();
-    await user.click(esiSortButton());
+  it('drops back to aria-sort="none" once another column takes over', () => {
+    const { sortBy } = renderTable();
+    sortBy('esi', 'desc');
 
-    await user.click(sortControl(/planet/i));
+    sortBy('pl_name', 'desc');
 
     expect(esiHeader()).toHaveAttribute('aria-sort', 'none');
   });
 
   it('sorts from the keyboard, because the control is a real button', async () => {
     const user = userEvent.setup();
-    renderTable({ planets: [UNSCORED, MIDDLING, SCORED] });
+    const { onSort } = renderTable({ planets: [UNSCORED, MIDDLING, SCORED] });
 
     esiSortButton().focus();
     await user.keyboard('{Enter}');
 
-    expect(renderedNames()).toEqual(['Scored', 'Middling', 'Unscored']);
+    expect(onSort).toHaveBeenCalledWith('esi');
   });
 
   it('opens the explainer from the info button without sorting', async () => {
     const user = userEvent.setup();
-    renderTable({ planets: [UNSCORED, MIDDLING, SCORED] });
+    const { onSort } = renderTable({ planets: [UNSCORED, MIDDLING, SCORED] });
     const orderBeforeClick = renderedNames();
 
     await user.click(esiInfoButton());
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(renderedNames()).toEqual(orderBeforeClick);
-    expect(esiHeader()).toHaveAttribute('aria-sort', 'none');
+    expect(onSort).not.toHaveBeenCalled();
   });
 
   it('does not select a planet when the header info button is used', async () => {
@@ -273,51 +270,36 @@ describe('PlanetTable ESI column', () => {
   });
 });
 
-describe('PlanetTable filtering', () => {
-  it('filters by planet name, case insensitively', async () => {
-    const user = userEvent.setup();
-    renderTable();
+describe('PlanetTable pagination', () => {
+  it('shows only the current page of rows', () => {
+    renderTable({ itemsPerPage: 2 });
 
-    await user.type(screen.getByPlaceholderText(/search exoplanets/i), 'beta');
-
-    expect(renderedNames()).toEqual(['Beta c']);
+    expect(renderedNames()).toEqual(['Alpha b', 'Beta c']);
   });
 
-  it('filters by host star name', async () => {
+  it('advances the rows when the shared control pages forward', async () => {
     const user = userEvent.setup();
-    renderTable();
+    renderTable({ itemsPerPage: 2 });
 
-    await user.type(screen.getByPlaceholderText(/search exoplanets/i), 'Wolf');
+    await user.click(screen.getByRole('button', { name: /next/i }));
 
     expect(renderedNames()).toEqual(['Gamma d']);
   });
 
-  it('offers each discovery method as a filter and applies it', async () => {
-    const user = userEvent.setup();
-    renderTable();
+  // The page count belongs to usePagination alone; the table must report it, never recompute it.
+  it('reports the page count it was given rather than deriving one from the rows', () => {
+    render(
+      <PlanetTable
+        planets={[ALPHA, BETA, GAMMA]}
+        pagination={{ page: 2, totalPages: 7, goTo: () => {}, pageItems: (items) => items.slice(0, 1) }}
+        onPlanetClick={() => {}}
+        sortKey="disc_year"
+        sortOrder="desc"
+        onSort={() => {}}
+      />,
+    );
 
-    await user.selectOptions(screen.getByRole('combobox'), 'Radial Velocity');
-
-    expect(renderedNames()).toEqual(['Beta c']);
-  });
-});
-
-describe('PlanetTable pagination', () => {
-  it('shows only the current page and reports the unpaginated total', () => {
-    renderTable({ itemsPerPage: 2 });
-
-    expect(renderedNames()).toEqual(['Beta c', 'Alpha b']);
-    expect(screen.getByText(/page 1 of 2 \(3 planets\)/i)).toBeInTheDocument();
-  });
-
-  it('disables Previous on the first page and advances via Next', async () => {
-    const user = userEvent.setup();
-    const { onPageChange } = renderTable({ itemsPerPage: 2 });
-
-    expect(screen.getByRole('button', { name: /previous/i })).toBeDisabled();
-    await user.click(screen.getByRole('button', { name: /next/i }));
-
-    expect(onPageChange).toHaveBeenCalledWith(2);
+    expect(screen.getByText(/page 2 of 7/i)).toBeInTheDocument();
   });
 });
 
@@ -326,31 +308,134 @@ describe('PlanetTable selection', () => {
     const user = userEvent.setup();
     const { onPlanetClick } = renderTable();
 
-    await user.click(screen.getByText('Alpha b'));
+    await user.click(screen.getByText('Ross 128'));
 
     expect(onPlanetClick).toHaveBeenCalledWith(ALPHA);
   });
 });
 
-describe('PlanetTable accessibility (#6)', () => {
-  // Encodes the open keyboard barrier: both turn red the moment sort headers and rows become operable, forcing these markers out.
-  it.fails('exposes each sort header as a keyboard-activatable control reporting aria-sort', async () => {
-    const user = userEvent.setup();
+describe('PlanetTable planet links (#68)', () => {
+  it('links each name to its planet page, encoding names that need it', () => {
     renderTable();
-    const header = screen.getByRole('columnheader', { name: /planet/i });
 
-    await user.click(within(header).getByRole('button'));
-
-    expect(header).toHaveAttribute('aria-sort', 'descending');
+    expect(nameLink('Alpha b')).toHaveAttribute('href', '/planet/Alpha%20b');
   });
 
-  it.fails('opens a planet row from the keyboard', async () => {
+  it('renders a real anchor, so middle-click and copy-link work', () => {
+    renderTable({ planets: [ALPHA] });
+
+    expect(nameLink('Alpha b').tagName).toBe('A');
+  });
+
+  // Decision 5: the name navigates, so it must not also fire the row's modal handler.
+  it('does not open the modal when the name link is clicked', async () => {
     const user = userEvent.setup();
     const { onPlanetClick } = renderTable();
 
-    screen.getAllByRole('row')[1].focus();
+    await user.click(nameLink('Alpha b'));
+
+    expect(onPlanetClick).not.toHaveBeenCalled();
+  });
+
+  it('gives every row both a navigation and a quick-look control, labelled apart', () => {
+    renderTable();
+
+    for (const name of ['Alpha b', 'Beta c', 'Gamma d']) {
+      expect(nameLink(name)).toBeInTheDocument();
+      expect(quickViewButton(name)).toBeInTheDocument();
+    }
+  });
+
+  // One icon-sized control per row would be unlabelled without this; the name disambiguates it.
+  it('names the quick-look control after its planet rather than repeating one generic label', () => {
+    renderTable();
+
+    expect(quickViewButton('Alpha b')).toHaveAccessibleName('Quick view: Alpha b');
+    expect(screen.getAllByRole('button', { name: /^Quick view: / })).toHaveLength(3);
+  });
+
+  it('keeps the quick-look control out of the accessible name of the row', () => {
+    renderTable({ planets: [ALPHA] });
+    const cell = within(screen.getAllByRole('row')[1]).getAllByRole('cell')[0];
+
+    expect(within(cell).getByRole('button')).toHaveTextContent('');
+    expect(cell.textContent).toBe('Alpha b');
+  });
+
+  it('leaves the quick-look icon out of the control\u2019s accessible name', () => {
+    renderTable({ planets: [ALPHA] });
+    const icon = quickViewButton('Alpha b').querySelector('svg');
+
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
+    expect(quickViewButton('Alpha b')).toHaveAccessibleName('Quick view: Alpha b');
+  });
+});
+
+describe('PlanetTable accessibility (#6)', () => {
+  it('exposes every sortable header as a keyboard-activatable control, not a click-only cell', async () => {
+    const user = userEvent.setup();
+    const { onSort } = renderTable();
+
+    for (const [column, key] of SORTABLE_COLUMNS) {
+      sortControl(column).focus();
+      await user.keyboard('{Enter}');
+
+      expect(onSort).toHaveBeenLastCalledWith(key);
+    }
+  });
+
+  it('reports the active column through aria-sort, whichever column it is', () => {
+    const { sortBy } = renderTable();
+
+    for (const [column, key] of SORTABLE_COLUMNS) {
+      sortBy(key, 'desc');
+
+      expect(screen.getByRole('columnheader', { name: column })).toHaveAttribute('aria-sort', 'descending');
+    }
+  });
+
+  it('leaves the unsortable column free of a sort control and of aria-sort', () => {
+    renderTable();
+    const header = screen.getByRole('columnheader', { name: /star/i });
+
+    expect(within(header).queryByRole('button')).not.toBeInTheDocument();
+    expect(header).not.toHaveAttribute('aria-sort');
+  });
+
+  it('opens a planet from the keyboard, naming it so the target is announced', async () => {
+    const user = userEvent.setup();
+    const { onPlanetClick } = renderTable();
+
+    quickViewButton('Beta c').focus();
     await user.keyboard('{Enter}');
 
     expect(onPlanetClick).toHaveBeenCalledWith(BETA);
+  });
+
+  it('keeps the row a row, so table navigation still works', () => {
+    renderTable();
+
+    expect(screen.getAllByRole('row')).toHaveLength(4);
+    expect(screen.getAllByRole('row')[1]).not.toHaveAttribute('role');
+  });
+
+  it('reports the planet once when its trigger is clicked, not twice via the row', async () => {
+    const user = userEvent.setup();
+    const { onPlanetClick } = renderTable();
+
+    await user.click(quickViewButton('Alpha b'));
+
+    expect(onPlanetClick).toHaveBeenCalledTimes(1);
+    expect(onPlanetClick).toHaveBeenCalledWith(ALPHA);
+  });
+
+  it('still opens a planet when the row is clicked away from its trigger', async () => {
+    const user = userEvent.setup();
+    const { onPlanetClick } = renderTable();
+
+    await user.click(screen.getByText('Ross 128'));
+
+    expect(onPlanetClick).toHaveBeenCalledTimes(1);
+    expect(onPlanetClick).toHaveBeenCalledWith(ALPHA);
   });
 });
