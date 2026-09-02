@@ -81,11 +81,12 @@ function renderTable(props: HarnessProps = {}) {
   };
 }
 
+// Reads the name link rather than the whole cell, which also holds the quick-view control.
 function renderedNames() {
   return screen
     .getAllByRole('row')
     .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[0].textContent);
+    .map((row) => within(row).getByRole('link').textContent);
 }
 
 function sortControl(name: RegExp) {
@@ -101,8 +102,12 @@ const SORTABLE_COLUMNS: [RegExp, SortKey][] = [
   [/esi/i, 'esi'],
 ];
 
-function rowTrigger(name: string) {
-  return screen.getByRole('button', { name });
+function nameLink(name: string) {
+  return screen.getByRole('link', { name });
+}
+
+function quickViewButton(name: string) {
+  return screen.getByRole('button', { name: `Quick view: ${name}` });
 }
 
 function esiHeader() {
@@ -296,9 +301,66 @@ describe('PlanetTable selection', () => {
     const user = userEvent.setup();
     const { onPlanetClick } = renderTable();
 
-    await user.click(screen.getByText('Alpha b'));
+    await user.click(screen.getByText('Ross 128'));
 
     expect(onPlanetClick).toHaveBeenCalledWith(ALPHA);
+  });
+});
+
+describe('PlanetTable planet links (#68)', () => {
+  it('links each name to its planet page, encoding names that need it', () => {
+    renderTable();
+
+    expect(nameLink('Alpha b')).toHaveAttribute('href', '/planet/Alpha%20b');
+  });
+
+  it('renders a real anchor, so middle-click and copy-link work', () => {
+    renderTable({ planets: [ALPHA] });
+
+    expect(nameLink('Alpha b').tagName).toBe('A');
+  });
+
+  // Decision 5: the name navigates, so it must not also fire the row's modal handler.
+  it('does not open the modal when the name link is clicked', async () => {
+    const user = userEvent.setup();
+    const { onPlanetClick } = renderTable();
+
+    await user.click(nameLink('Alpha b'));
+
+    expect(onPlanetClick).not.toHaveBeenCalled();
+  });
+
+  it('gives every row both a navigation and a quick-look control, labelled apart', () => {
+    renderTable();
+
+    for (const name of ['Alpha b', 'Beta c', 'Gamma d']) {
+      expect(nameLink(name)).toBeInTheDocument();
+      expect(quickViewButton(name)).toBeInTheDocument();
+    }
+  });
+
+  // One icon-sized control per row would be unlabelled without this; the name disambiguates it.
+  it('names the quick-look control after its planet rather than repeating one generic label', () => {
+    renderTable();
+
+    expect(quickViewButton('Alpha b')).toHaveAccessibleName('Quick view: Alpha b');
+    expect(screen.getAllByRole('button', { name: /^Quick view: / })).toHaveLength(3);
+  });
+
+  it('keeps the quick-look control out of the accessible name of the row', () => {
+    renderTable({ planets: [ALPHA] });
+    const cell = within(screen.getAllByRole('row')[1]).getAllByRole('cell')[0];
+
+    expect(within(cell).getByRole('button')).toHaveTextContent('');
+    expect(cell.textContent).toBe('Alpha b');
+  });
+
+  it('leaves the quick-look icon out of the control\u2019s accessible name', () => {
+    renderTable({ planets: [ALPHA] });
+    const icon = quickViewButton('Alpha b').querySelector('svg');
+
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
+    expect(quickViewButton('Alpha b')).toHaveAccessibleName('Quick view: Alpha b');
   });
 });
 
@@ -337,7 +399,7 @@ describe('PlanetTable accessibility (#6)', () => {
     const user = userEvent.setup();
     const { onPlanetClick } = renderTable();
 
-    rowTrigger('Beta c').focus();
+    quickViewButton('Beta c').focus();
     await user.keyboard('{Enter}');
 
     expect(onPlanetClick).toHaveBeenCalledWith(BETA);
@@ -354,7 +416,7 @@ describe('PlanetTable accessibility (#6)', () => {
     const user = userEvent.setup();
     const { onPlanetClick } = renderTable();
 
-    await user.click(rowTrigger('Alpha b'));
+    await user.click(quickViewButton('Alpha b'));
 
     expect(onPlanetClick).toHaveBeenCalledTimes(1);
     expect(onPlanetClick).toHaveBeenCalledWith(ALPHA);

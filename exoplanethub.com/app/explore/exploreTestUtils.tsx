@@ -53,11 +53,16 @@ export function renderExplore(planets: PlanetSummary[] = [ALPHA, BETA, GAMMA]) {
   };
 }
 
+// Reads the name link rather than the whole cell, which also holds the quick-view control.
 export function tableNames() {
   return screen
     .getAllByRole('row')
     .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[0].textContent);
+    .map((row) => within(row).getByRole('link').textContent);
+}
+
+export function quickViewButton(name: string) {
+  return screen.getByRole('button', { name: `Quick view: ${name}` });
 }
 
 export function cardNames() {

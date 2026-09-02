@@ -1,5 +1,7 @@
 'use client';
+import Link from 'next/link';
 import { PlanetSummary } from '@/lib/mockPlanets';
+import { planetUrl } from '@/lib/planetUrl';
 import ModalDialog from '@/components/ui/ModalDialog';
 import styles from './PlanetModal.module.css';
 
@@ -49,6 +51,10 @@ export default function PlanetModal({ planet, onClose }: PlanetModalProps) {
             </div>
           </div>
         </div>
+
+        <Link className={styles.fullProfile} href={planetUrl(planet.pl_name)}>
+          View full profile
+        </Link>
       </div>
     </ModalDialog>
   );

@@ -113,6 +113,20 @@ describe('PlanetPage', () => {
     ]);
   });
 
+  // PageSection derives every heading id from the section id, so labelling cannot drift or collide.
+  it('exposes each section as a region named by its own heading', async () => {
+    await renderPage('Kepler-452%20b');
+
+    const headings = screen.getAllByRole('heading', { level: 2 });
+    const regions = screen.getAllByRole('region');
+
+    expect(regions).toHaveLength(headings.length);
+    regions.forEach((region, index) => {
+      expect(headings[index].id).not.toBe('');
+      expect(region).toHaveAttribute('aria-labelledby', headings[index].id);
+    });
+  });
+
   it.each([
     ['Planet', 'Radius', '1.63 × Earth'],
     ['Planet', 'Orbital period', '384.8 days'],

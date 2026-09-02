@@ -120,3 +120,36 @@ describe('PlanetModal content', () => {
     expect(within(dialog).getByText('Orbits Unknown')).toBeInTheDocument();
   });
 });
+
+describe('PlanetModal full profile link (#68)', () => {
+  it('offers the planet page as the next step out of the quick look', async () => {
+    const { dialog } = await openModal();
+
+    expect(within(dialog).getByRole('link', { name: 'View full profile' })).toHaveAttribute(
+      'href',
+      '/planet/Kepler-186%20f',
+    );
+  });
+
+  it('is a link rather than a button, so middle-click and copy-link work', async () => {
+    const { dialog } = await openModal();
+
+    expect(within(dialog).getByRole('link', { name: 'View full profile' }).tagName).toBe('A');
+  });
+
+  // The dialog had one focus stop before this link; the trap has to keep cycling both.
+  it('is reachable by Tab inside the focus trap', async () => {
+    const { user, dialog } = await openModal();
+    const close = within(dialog).getByRole('button', { name: 'Close' });
+    const fullProfile = within(dialog).getByRole('link', { name: 'View full profile' });
+
+    await user.tab();
+    expect(close).toHaveFocus();
+
+    await user.tab();
+    expect(fullProfile).toHaveFocus();
+
+    await user.tab();
+    expect(close).toHaveFocus();
+  });
+});

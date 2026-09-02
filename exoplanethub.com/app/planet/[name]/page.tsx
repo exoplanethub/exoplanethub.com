@@ -7,6 +7,7 @@ import { getPlanetDetail } from '@/lib/planetDetail';
 import { planetMetadata } from '@/lib/planetMetadata';
 import { planetNameFromParam } from '@/lib/planetUrl';
 import { planetStatSections, type PlanetStatSection } from '@/lib/planetStats';
+import PageSection from './PageSection';
 import styles from './page.module.css';
 
 export const revalidate = 3600;
@@ -66,16 +67,11 @@ export default async function PlanetPage({ params }: PlanetPageProps) {
   );
 }
 
-const COMPARISON_HEADING_ID = 'earth-comparison-heading';
-
 function EarthComparisonSection({ comparisons }: { comparisons: EarthComparison[] }) {
   if (comparisons.length === 0) return null;
 
   return (
-    <section className={styles.section} aria-labelledby={COMPARISON_HEADING_ID}>
-      <h2 id={COMPARISON_HEADING_ID} className={styles.sectionTitle}>
-        Compared with Earth
-      </h2>
+    <PageSection id="earth-comparison" title="Compared with Earth">
       <dl className={styles.comparisons}>
         {comparisons.map(({ aspect, detail }) => (
           <div key={aspect} className={styles.comparison}>
@@ -84,18 +80,13 @@ function EarthComparisonSection({ comparisons }: { comparisons: EarthComparison[
           </div>
         ))}
       </dl>
-    </section>
+    </PageSection>
   );
 }
 
 function StatSection({ section }: { section: PlanetStatSection }) {
-  const headingId = `${section.id}-heading`;
-
   return (
-    <section className={styles.section} aria-labelledby={headingId}>
-      <h2 id={headingId} className={styles.sectionTitle}>
-        {section.title}
-      </h2>
+    <PageSection id={section.id} title={section.title}>
       <dl className={styles.stats}>
         {section.stats.map(({ label, value }) => (
           <div key={label} className={styles.stat}>
@@ -104,7 +95,7 @@ function StatSection({ section }: { section: PlanetStatSection }) {
           </div>
         ))}
       </dl>
-    </section>
+    </PageSection>
   );
 }
 

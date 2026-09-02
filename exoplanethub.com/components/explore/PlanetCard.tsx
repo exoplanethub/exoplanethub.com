@@ -1,5 +1,6 @@
 'use client';
 import { PlanetSummary } from '@/lib/mockPlanets';
+import PlanetNameLink from '@/components/planet/PlanetNameLink';
 import ESIBadge from './ESIBadge';
 import styles from './PlanetCard.module.css';
 
@@ -17,7 +18,9 @@ export default function PlanetCard({ planet, onClick }: PlanetCardProps) {
       </div>
       
       <div className={styles.content}>
-        <h3 className={styles.name}>{planet.pl_name}</h3>
+        <h3 className={styles.name}>
+          <PlanetNameLink name={planet.pl_name} />
+        </h3>
         <p className={styles.star}>{planet.hostname || 'Unknown'}</p>
         
         <div className={styles.stats}>

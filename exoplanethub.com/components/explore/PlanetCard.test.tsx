@@ -39,6 +39,24 @@ describe('PlanetCard', () => {
     expect(screen.getByRole('button', { name: 'Learn More' })).toBeInTheDocument();
   });
 
+  it('links the name to the planet page, encoding names that need it', () => {
+    renderCard(SCORED);
+
+    expect(screen.getByRole('link', { name: 'Kepler-442 b' })).toHaveAttribute(
+      'href',
+      '/planet/Kepler-442%20b',
+    );
+  });
+
+  // Decision 5 keeps the two-control pattern in the table; the card's button still only opens the modal.
+  it('keeps Learn More as the modal control rather than a second link', () => {
+    const onClick = vi.fn();
+    render(<PlanetCard planet={SCORED} onClick={onClick} />);
+
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Learn More' })).toBeInTheDocument();
+  });
+
   // The emoji stands in for planet imagery; announcing "ringed planet" says nothing about this planet.
   it('hides the decorative planet glyph from assistive tech', () => {
     renderCard(SCORED);
