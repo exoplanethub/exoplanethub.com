@@ -73,6 +73,18 @@ describe('generateCSSVariables', () => {
   });
 });
 
+describe('border token', () => {
+  // WCAG 1.4.11: a control whose only affordance is its border needs 3:1 against what it sits on.
+  it.each(THEME_NAMES)('%s draws the border at 3:1 or better on every surface', (name) => {
+    const { colors } = getTheme(name);
+
+    for (const surface of ['surface', 'surfaceAlt', 'background'] as const) {
+      const fill = colors[surface];
+      expect(contrastRatio(colors.border, fill), `${name} border ${colors.border} on ${surface} ${fill}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+});
+
 describe('ESI band tokens', () => {
   it.each(THEME_NAMES)('%s reads its band label against the band fill at 4.5:1 or better', (name) => {
     const { colors } = getTheme(name);
