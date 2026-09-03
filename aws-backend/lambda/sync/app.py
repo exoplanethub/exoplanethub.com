@@ -12,6 +12,7 @@ logging.getLogger('sweep').setLevel(logging.INFO)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['TABLE_NAME'])
+tombstones = dynamodb.Table(os.environ['TOMBSTONES_TABLE_NAME'])
 
 def lambda_handler(event, context):
     nasa_url = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+pl_name,hostname,sy_snum,sy_pnum,sy_dist,discoverymethod,disc_year,disc_facility,pl_orbper,pl_orbsmax,pl_rade,pl_bmasse,pl_dens,pl_eqt,pl_insol,st_teff,st_rad,st_mass,st_logg,st_age+from+ps+where+default_flag=1&format=json"
@@ -54,7 +55,7 @@ def lambda_handler(event, context):
 
             batch.put_item(Item=item)
 
-    sweep = sweep_removed(table, archive_names)
+    sweep = sweep_removed(table, tombstones, archive_names, removed_at=timestamp)
 
     return {
         'statusCode': 200,
