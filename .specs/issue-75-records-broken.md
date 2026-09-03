@@ -58,27 +58,37 @@ disagree, then builds records on top of that one definition.
 - [ ] A new holder sets `since` to that sync's timestamp and prepends the displaced holder (name,
       value, tenure) to `previous`, capped at 20. Same holder with a moved value updates only
       `holder.value`.
+- [ ] `holder.value` and every `previous[].value` are persisted as `Decimal` through the shared
+      `to_decimal` (decision 5); no `float` ever reaches the writer. The same-holder value refresh
+      compares `to_decimal(fresh)` against the stored `Decimal`, so an unchanged value is never
+      reported as a change and a no-op sync writes nothing.
 - [ ] Ties break deterministically (planet name ascending), so a tie can never flap between syncs.
 - [ ] Most Earth-like ranks on `esi_similarity()` — the same function behind the badge — with no
       candidate filter of its own, so its candidate set is exactly the set of scored planets.
 - [ ] A records failure never fails the sync; the run body reports `records_changed` and
       `records_aborted`. Records are skipped when the sweep aborted.
 - [ ] `/records` server-renders every tracked record in registry order — label, plain-language
-      blurb, holder as `PlanetNameLink`, formatted value, "held since" and previous holders when
-      there are any — with a one-line "closest to Earth's conditions, not habitable" note on the
-      Most Earth-like card. One `<h1>`, hierarchical headings, values readable as label/value pairs.
+      blurb, holder as `PlanetNameLink`, formatted value, tenure and previous holders — with a
+      one-line "closest to Earth's conditions, not habitable" note on the Most Earth-like card.
+      Tenure follows decision 3: a record with previous holders reads "held since <date>"; a
+      baseline (empty `previous`) reads "tracked since <date>" and lists no previous holders, so the
+      first sync's date is never presented as the day the record changed hands. One `<h1>`,
+      hierarchical headings, values readable as label/value pairs.
 - [ ] Homepage strip shows three records, most recently changed first, each with holder, value and
       "took the record from X on <date>" when applicable, plus a link to `/records`. Unavailable
       state matches Latest Discoveries; it never renders empty.
 - [ ] `Records` in the NavBar, `/records` in the sitemap's static paths, page-specific
       title/description.
-- [ ] Python: `records.py` unit-tested with the `FakeTable` pattern — baseline, unchanged, value
-      refresh, holder change + cap, tie-break, unmeasured input, empty candidates. TS:
-      `lib/records.ts` and both components tested per the existing mock patterns.
+- [ ] Python: `records.py` unit-tested with the `FakeTable` pattern — baseline, unchanged (asserts
+      zero writes), value refresh, holder change + cap, tie-break, unmeasured input, empty
+      candidates. The fake's `put_item` rejects `float` the way boto3 does, so the Decimal boundary
+      is tested rather than trusted. TS: `lib/records.ts` and both components tested per the
+      existing mock patterns.
 
 ## Technical Approach
-Both layers. Prerequisite: one change to `esi.py` and the explainer. Then backend: one new module in
-the sync Lambda plus a table. Frontend: one data module, one page, one strip.
+Both layers. Prerequisite: one change to `esi.py` and the explainer. Then backend: `records.py` plus
+a small `values.py` it shares with `esi.py` and `app.py`, and a table. Frontend: one data module, one
+page, one strip.
 
 **1. ESI requires all three inputs — one definition, shared by badge and record.** Supersedes
 issue-9's two-component floor. `esi.py` drops `MINIMUM_COMPONENTS`; `esi_similarity(record) ->
@@ -86,22 +96,24 @@ float | None` returns the unrounded geometric mean over exactly radius, mass and
 `None`; `compute_esi` is `round(100 × that)`. `records.py` ranks Most Earth-like on
 `esi_similarity()` with no filter of its own, so the record and the badge are one function and cannot
 drift — the mismatch Zack flagged is defined out of existence rather than explained on a card.
-Coverage, measured 2026-09-03 against `ps` (`default_flag=1`, 6,354 planets): today's 2-of-3 rule
-scores **2,174**; all three listed scores **1,139**; **386** planets have radius and mass but no
-temperature — the molten-100 bucket that prompted this. Zack accepted the drop to 1,139 over any
-derived temperature: every remaining score is one the archive backs. *Alternative: temperature mandatory plus
-either radius or mass (1,756 planets) — rejected: still a partial score, and a rule with a special
-case is the opposite of what was asked for.* *Alternative: back-fill `pl_eqt` from `pl_insol`
-(T ≈ 278.6 K × S^¼) — measured: +32 planets, because insolation is almost always listed alongside a
-temperature; not worth a second, flagged kind of temperature in the item and the UI.* *Alternative:
-derive from `st_teff`, `st_rad`, `pl_orbsmax` — +158 more, but it needs an albedo we'd have to pick
-(the archive's own values don't agree on one) and every consumer would need to know which
-temperatures are ours; if coverage ever outweighs provenance it slots in behind `esi_similarity()`
-without touching a caller.* The frontend needs no logic change — absent `esi` already renders "—"
-and sorts last (issue-9, decision 3) — only the explainer's wording, which is the "note" Zack asked
-for. Rollout is self-healing: the next sync rewrites every item and the `/api/planets` CDN cache
-ages out within ~7 h. Ships as its own PR and backend tag, so the table changes before a record
-card ever appears.
+Coverage, measured 2026-09-03 against `ps` (`default_flag=1`, 6,354 planets; independently
+re-counted in review): today's 2-of-3 rule scores **2,174**; all three listed scores **1,139**;
+**418** planets have radius and mass but no temperature — the molten-100 bucket that prompted this
+(the three two-input buckets, 418 + 441 + 176, sum to the 1,035 the new rule drops). The archive
+moves by a handful of planets a day, so treat these as a snapshot, not a contract. Zack accepted the
+drop to 1,139 over any derived temperature: every remaining score is one the archive backs.
+*Alternative: temperature mandatory plus either radius or mass (1,756 planets) — rejected: still a
+partial score, and a rule with a special case is the opposite of what was asked for.* *Alternative:
+back-fill `pl_eqt` from `pl_insol` (T ≈ 278.6 K × S^¼) — measured: +32 planets, because insolation
+is almost always listed alongside a temperature; not worth a second, flagged kind of temperature in
+the item and the UI.* *Alternative: derive from `st_teff`, `st_rad`, `pl_orbsmax` — +158 more, but
+it needs an albedo we'd have to pick (the archive's own values don't agree on one) and every consumer
+would need to know which temperatures are ours; if coverage ever outweighs provenance it slots in
+behind `esi_similarity()` without touching a caller.* The frontend needs no logic change — absent
+`esi` already renders "—" and sorts last (issue-9, decision 3) — only the explainer's wording, which
+is the "note" Zack asked for. Rollout is self-healing: the next sync rewrites every item and the
+`/api/planets` CDN cache ages out within ~7 h. Ships as its own PR and backend tag, so the table
+changes before a record card ever appears.
 
 **2. Records live in their own table, `exoplanet-records-${Environment}`, PK `record_id` (S), no
 sort key** — the convention PR #83 set for tombstones. *Alternative: synthetic keys in the planets
@@ -113,10 +125,14 @@ thing the next sync cannot recompute, and `UpdateReplacePolicy` is the half that
 key-schema change would otherwise let CloudFormation silently swap in an empty table. *Alternative:
 `DeletionProtectionEnabled: true` — rejected for the same reason #83 gave: it does not cover the
 replacement path, and neither stack has a teardown workflow that would hit Retain's "already exists"
-cost.* The Lambda gets `RECORDS_TABLE_NAME` and `DynamoDBCrudPolicy` (it reads to diff). The
-frontend reads via `EXOPLANETS_RECORDS_TABLE` (default `exoplanet-records-dev`), mirroring
-`planetsTableName`. Deploy note for Zack: the Vercel read credentials' IAM policy lives outside the
-repo and needs the new table's ARN.
+cost.* The Lambda gets `RECORDS_TABLE_NAME` plus `DynamoDBReadPolicy` and `DynamoDBWritePolicy` on
+the table — it Scans to diff and Puts to reconcile, and this is the one table whose contents cannot
+be recomputed, so it does not get `DeleteItem`. *Alternative: `DynamoDBCrudPolicy` — rejected: grants
+the delete this spec spends a paragraph guarding against, and the tombstones table already set the
+narrower precedent.* The frontend reads via `EXOPLANETS_RECORDS_TABLE` (default
+`exoplanet-records-dev`), mirroring `planetsTableName`. The Vercel read credentials' IAM policy lives
+outside the repo; it needs `dynamodb:Scan` on the new table's ARN before `/records` or the strip can
+render anything but `unavailable` — a real prerequisite, so it is a named task below, not a footnote.
 
 **3. One state item per record, not an event log.**
 ```
@@ -132,9 +148,10 @@ and the page's read are one call each. *Alternative: an append-only event log (P
 mutated, "latest change across all records" needs a GSI or a growing Scan, and the first sync has
 to fabricate baseline events. The state item folds all of that into one write.* The cost is bounded
 history, which a feed doesn't need (Latest Discoveries shows ten). A baseline — first sync, or a
-record id added later — writes the item with `previous: []`; the UI treats empty `previous` as
-"tracked, never broken" and the strip never presents a baseline as a change. Adding a superlative is
-one registry line per side; no migration.
+record id added later — writes the item with `previous: []`; its `since` is the sync we started
+watching, not the day the holder won, and both surfaces say so: the page reads "tracked since" for an
+empty `previous` and "held since" only once a record has actually changed hands, and the strip never
+presents a baseline as a change. Adding a superlative is one registry line per side; no migration.
 
 **4. The registry is the contract: definition in Python, presentation in TypeScript.** `records.py`
 holds `RECORDS = (RecordSpec(id, field, direction), …)`; `lib/records.ts` holds
@@ -160,13 +177,25 @@ constrained orbits) and *longest year* (dominated by imaged planets with century
 `nearest` will likely never change — it is on the page as a fact, and the strip ranks by recency so
 it never crowds out a real change.
 
-**5. Candidates must be finite and > 0; nothing else is filtered.** Extract `esi._is_measured` into
-a shared `measured()` used by both modules; `records.py` computes over the raw archive JSON (floats),
-not the Decimal items, because `_is_measured` rejects `Decimal` by design. *Alternative: outlier
-clipping (drop radii above 30 R⊕, etc.) — rejected: that is editorial. If NASA lists it as confirmed,
-the site reports it; a bad value that later gets fixed shows up as another record change, which is
-exactly what the feed is for.* Most Earth-like ranks on the unrounded `esi_similarity()` because the
-stored integer ties constantly at the top; it inherits decision 1's floor and adds nothing.
+**5. Candidates must be finite and > 0; nothing else is filtered — and the float/Decimal boundary
+lives in one module.** `records.py` computes over the raw archive JSON (floats), not the Decimal
+items, because `_is_measured` rejects `Decimal` by design. But boto3 refuses Python floats, and
+`update_records` never raises (decision 6) — so without a stated rule the first sync would log a
+`TypeError`, report `records_aborted`, and the feature would never appear while every dict-backed
+test stayed green. Rule: a new `lambda/sync/values.py` owns both halves of the boundary —
+`measured(value)` (today's `esi._is_measured`, moved) and `to_decimal(value)` (today's
+`app.to_decimal`, moved) — and `esi.py`, `app.py` and `records.py` import from it. `records.py`
+converts with `to_decimal` at the moment it builds the item, and the same-holder refresh compares
+`to_decimal(fresh) != stored['value']` on the Decimal side; `Decimal(str(float))` round-trips
+DynamoDB exactly, so an unchanged value never registers as a change. *Alternative: import
+`to_decimal` from `app.py` — rejected: `app.py` imports `records.py`, so that is a cycle, and it
+drags the handler's boto3 client construction into every unit test.* *Alternative: compare on the
+float side by converting the stored value back — rejected: `Decimal('0.1') != 0.1`, so a stored
+value would read as "moved" on every sync, forever.* *Alternative: outlier clipping (drop radii
+above 30 R⊕, etc.) — rejected: that is editorial. If NASA lists it as confirmed, the site reports
+it; a bad value that later gets fixed shows up as another record change, which is exactly what the
+feed is for.* Most Earth-like ranks on the unrounded `esi_similarity()` because the stored integer
+ties constantly at the top; it inherits decision 1's floor and adds nothing.
 
 **6. Records run after the sweep and skip when it aborted.** `update_records(records_table, data,
 timestamp) -> RecordsResult(changed, aborted)` has the same never-raises contract as `sweep_removed`;
@@ -202,14 +231,22 @@ running) is a contained change inside `records.py`.
 
 ## Task Breakdown
 1. Unified ESI: `esi.py` all-three floor + `esi_similarity()` export, tests re-pinned, `ESIModal`
-   wording (exponent, all-three note, adaptation note); own PR and backend tag; scored count noted
-   in the PR (size: S)
-2. Backend: `records.py` (registry, shared `measured()`, holder computation, reconcile with bounded
-   `previous`), `app.py` wiring after the sweep, template (`RecordsTable` with Retain policies, env,
-   policy, output), README, tests (size: M)
-3. `lib/records.ts`: types, TS registry (labels, blurbs, formatters), `fetchRecords()`, date
+   wording (exponent, all-three note, adaptation note); ROADMAP Shipped #1 corrected to "radius,
+   mass, and temperature" (it says density today, which was never true); own PR and backend tag;
+   scored count noted in the PR (size: S)
+2. Backend: `values.py` (`measured()` and `to_decimal()` moved from `esi.py`/`app.py`, callers
+   updated), `records.py` (registry, holder computation, reconcile with bounded `previous`, Decimal
+   at the item boundary), `app.py` wiring after the sweep, template (`RecordsTable` with Retain
+   policies, env, Read + Write policies, output), README, tests with a float-rejecting fake
+   (size: M)
+3. Deploy prerequisite — Zack, outside the repo: grant the Vercel read credentials `dynamodb:Scan`
+   on `exoplanet-records-<env>`'s ARN. Until this lands, tasks 5–6 render `unavailable` in
+   production while CI stays green, so it must be verified before either is called done (size: S)
+4. `lib/records.ts`: types, TS registry (labels, blurbs, formatters), `fetchRecords()`, date
    formatter extracted from the planet page, tests (size: S)
-4. `/records` page: per-record cards with holder link/value/tenure/previous, Most Earth-like
-   honesty line, metadata, NavBar link, sitemap static path, tests (size: M)
-5. Homepage `RecordsStrip` (Suspense + `connection()`, three most recent, link to `/records`) between
-   Hero and Latest Discoveries, tests (size: S)
+5. `/records` page: per-record cards with holder link/value/tenure ("held since" vs "tracked
+   since")/previous, Most Earth-like honesty line, metadata, NavBar link, sitemap static path,
+   tests (size: M)
+6. Homepage `RecordsStrip` (Suspense + `connection()`, three most recent, link to `/records`) between
+   Hero and Latest Discoveries, tests; ROADMAP "Shipped" entry for Records Broken added in this PR
+   so the epic doesn't need a follow-up like #80 (size: S)
