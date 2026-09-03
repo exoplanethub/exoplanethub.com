@@ -14,12 +14,32 @@ timestamp. If the tombstone batch fails, nothing is deleted. A planet the archiv
 drops again keeps only its latest tombstone. The table is retained if the stack is deleted or the
 resource replaced, because a resync cannot rebuild it.
 
-The invocation result reports `total_synced`, `removals_submitted` and `sweep_aborted`; every
-removed `pl_name` is logged individually. `removals_submitted` counts what was handed to DynamoDB:
-exact when `sweep_aborted` is false, an upper bound when it is true, because a batch can commit and
-still fail. A run that aborts mid-sweep is safe to retry — tombstones and deletions are idempotent,
-though a retry re-puts each tombstone with its own `removed_at`, so the recorded time is the last
-attempt's, not the first run that saw the record stale.
+After the sweep, the sync reconciles the records table, `exoplanet-records-<env>` (env
+`RECORDS_TABLE_NAME`): one item per superlative in `records.py`'s `RECORDS` registry, keyed by
+`record_id` — `{record_id, holder: {pl_name, value}, since, previous, updated_at}`. Each record's
+holder is computed from the fetched archive (finite, positive values only; Most Earth-like ranks on
+the unrounded ESI similarity, so its candidates are exactly the scored planets; ties go to the
+alphabetically first name). A new holder sets `since` to the run's timestamp and prepends the
+displaced holder `{pl_name, value, since, until}` to `previous`, which keeps the latest 20. The same
+holder with a moved value refreshes `holder.value` only; an identical value writes nothing, and a
+record with no measurable candidates is left untouched. The first sync — or a record id added to the
+registry later — writes a baseline with an empty `previous`, so its `since` is when tracking began,
+not when the holder won. Values are stored as `Decimal` through `values.to_decimal`. The table is
+retained like the tombstones: a resync recomputes the holder but never the history, which is also
+why the Lambda gets read and write access but not `DynamoDBCrudPolicy`: it never needs `DeleteItem`.
+
+Records are skipped when the sweep aborted, because a truncated fetch would fabricate a broken
+record that flips back on the next run. The step never fails the sync: a failure is logged and
+reported as `records_aborted`.
+
+The invocation result reports `total_synced`, `removals_submitted`, `sweep_aborted`,
+`records_changed` and `records_aborted`; every removed `pl_name` and every record written is logged
+individually. `removals_submitted` counts what was handed to DynamoDB: exact when `sweep_aborted` is
+false, an upper bound when it is true, because a batch can commit and still fail. `records_changed`
+counts items written — a new holder or a refreshed value — and is a lower bound when
+`records_aborted` is true. A run that aborts mid-sweep is safe to retry — tombstones and deletions
+are idempotent, though a retry re-puts each tombstone with its own `removed_at`, so the recorded
+time is the last attempt's, not the first run that saw the record stale.
 
 ## Local Deployment
 
