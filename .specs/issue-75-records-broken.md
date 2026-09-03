@@ -61,10 +61,16 @@ one page, one strip.
 sort key** — the convention PR #83 set for tombstones. *Alternative: synthetic keys in the planets
 table (`pl_name = "#record#hottest"`) — rejected: the sweep deletes any key absent from the archive
 on the very next run, and `/api/planets`, the sitemap and every future Scan would need a filter. A
-separate table needs zero filters anywhere.* The Lambda gets `RECORDS_TABLE_NAME` and
-`DynamoDBCrudPolicy` (it reads to diff). The frontend reads via `EXOPLANETS_RECORDS_TABLE` (default
-`exoplanet-records-dev`), mirroring `planetsTableName`. Deploy note for Zack: the Vercel read
-credentials' IAM policy lives outside the repo and needs the new table's ARN.
+separate table needs zero filters anywhere.* The table carries `DeletionPolicy: Retain` and
+`UpdateReplacePolicy: Retain`, as #83 settled for tombstones: `since` and `previous` are the one
+thing the next sync cannot recompute, and `UpdateReplacePolicy` is the half that matters — a later
+key-schema change would otherwise let CloudFormation silently swap in an empty table. *Alternative:
+`DeletionProtectionEnabled: true` — rejected for the same reason #83 gave: it does not cover the
+replacement path, and neither stack has a teardown workflow that would hit Retain's "already exists"
+cost.* The Lambda gets `RECORDS_TABLE_NAME` and `DynamoDBCrudPolicy` (it reads to diff). The
+frontend reads via `EXOPLANETS_RECORDS_TABLE` (default `exoplanet-records-dev`), mirroring
+`planetsTableName`. Deploy note for Zack: the Vercel read credentials' IAM policy lives outside the
+repo and needs the new table's ARN.
 
 **2. One state item per record, not an event log.**
 ```
@@ -153,8 +159,8 @@ question).
 
 ## Task Breakdown
 1. Backend: `records.py` (registry, shared `measured()`, `esi_similarity()`, holder computation,
-   reconcile with bounded `previous`), `app.py` wiring after the sweep, template (`RecordsTable`,
-   env, policy, output), README, tests (size: M)
+   reconcile with bounded `previous`), `app.py` wiring after the sweep, template (`RecordsTable`
+   with Retain policies, env, policy, output), README, tests (size: M)
 2. `lib/records.ts`: types, TS registry (labels, blurbs, formatters), `fetchRecords()`, date
    formatter extracted from the planet page, tests (size: S)
 3. `/records` page: per-record cards with holder link/value/tenure/previous, Most Earth-like honesty
