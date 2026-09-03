@@ -11,7 +11,7 @@ say it, the site does not claim it.
 ## Shipped
 
 ### 1. Earth-Similarity Index (ESI) Badge & Sorting
-Add visual indicators and sorting for planets most similar to Earth based on radius, density, and temperature.
+Add visual indicators and sorting for planets most similar to Earth based on radius, mass, and temperature.
 
 **Tasks:**
 - Calculate ESI score for each planet

@@ -29,10 +29,10 @@ export default function ESIModal({ onClose }: ESIModalProps) {
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>The Formula</h3>
           <div className={styles.formula}>
-            ESI = [(Radius Component) × (Temperature Component) × (Mass Component)]^(1/n)
+            ESI = [(Radius Component) × (Temperature Component) × (Mass Component)]^(1/3)
           </div>
           <p className={styles.description}>
-            Where n is the number of available components (2-3 depending on data availability)
+            All three inputs are required. A planet missing its radius, mass, or temperature shows no score rather than a partial one.
           </p>
         </div>
 
@@ -69,6 +69,8 @@ export default function ESIModal({ onClose }: ESIModalProps) {
         </div>
 
         <p className={styles.reference}>
+          This is ExoplanetHub&apos;s adaptation of the published index, built on the inputs the NASA Exoplanet Archive measures.
+          <br />
           Formula source: Schulze-Makuch et al. (2011), <em>Astrobiology</em>.
           <br />
           Learn more: <a href="https://en.wikipedia.org/wiki/Earth_Similarity_Index" target="_blank" rel="noopener noreferrer">
