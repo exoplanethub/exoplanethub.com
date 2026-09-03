@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/layout/NavBar";
-import { generateCSSVariables } from "@/lib/theme";
-// Push
+import { generateCSSVariables, SITE_THEME } from "@/lib/theme";
+import { SITE_ORIGIN } from "@/lib/site";
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -15,7 +16,9 @@ const poppins = Poppins({
   subsets: ["latin"],
 });
 
+// Resolves the relative canonical and og:url a page returns, so a shared link is absolute.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_ORIGIN),
   title: "ExoplanetHub - Discover Worlds Beyond Our Solar System",
   description: "Explore thousands of confirmed exoplanets with detailed data and visualizations",
 };
@@ -27,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${poppins.variable}`} style={generateCSSVariables('nautilus')}>
+      <body className={`${inter.variable} ${poppins.variable}`} style={generateCSSVariables(SITE_THEME)}>
         <NavBar />
         {children}
       </body>

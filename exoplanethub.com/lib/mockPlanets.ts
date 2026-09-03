@@ -33,9 +33,11 @@ export const PLANET_SUMMARY_FIELDS = [
   'sy_dist',
   'discoverymethod',
   'disc_year',
+  'pl_orbper',
   'pl_rade',
   'pl_bmasse',
   'pl_eqt',
+  'st_teff',
   'esi',
 ] as const;
 

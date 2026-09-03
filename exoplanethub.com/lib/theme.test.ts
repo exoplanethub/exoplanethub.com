@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import themeConfig from '@/theme/theme.json';
-import { generateCSSVariables, getTheme, type ThemeName } from '@/lib/theme';
+import { generateCSSVariables, getTheme, SITE_THEME, type ThemeName } from '@/lib/theme';
 
 const THEME_NAMES: ThemeName[] = ['nautilus', 'cosmicDawn', 'starlight'];
 const BAND_NUMBERS = [1, 2, 3, 4] as const;
@@ -23,8 +23,8 @@ function contrastRatio(a: string, b: string): number {
 
 describe('getTheme', () => {
   it('defaults to the theme theme.json declares as default', () => {
-    expect(themeConfig.defaultTheme).toBe('nautilus');
-    expect(getTheme()).toBe(getTheme('nautilus'));
+    expect(SITE_THEME).toBe(themeConfig.defaultTheme);
+    expect(getTheme()).toBe(getTheme(SITE_THEME));
   });
 
   it('exposes every theme named in the ThemeName union', () => {
