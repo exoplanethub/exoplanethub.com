@@ -1,6 +1,6 @@
 # Spec: Records Broken
 Issue: #75
-Status: draft
+Status: approved
 
 ## Problem Statement
 ROADMAP.md says everything the site presents as new is derived from the sync's diff against the
@@ -88,7 +88,8 @@ float | None` returns the unrounded geometric mean over exactly radius, mass and
 drift — the mismatch Zack flagged is defined out of existence rather than explained on a card.
 Coverage, measured 2026-09-03 against `ps` (`default_flag=1`, 6,354 planets): today's 2-of-3 rule
 scores **2,174**; all three listed scores **1,139**; **386** planets have radius and mass but no
-temperature — the molten-100 bucket that prompted this. *Alternative: temperature mandatory plus
+temperature — the molten-100 bucket that prompted this. Zack accepted the drop to 1,139 over any
+derived temperature: every remaining score is one the archive backs. *Alternative: temperature mandatory plus
 either radius or mass (1,756 planets) — rejected: still a partial score, and a rule with a special
 case is the opposite of what was asked for.* *Alternative: back-fill `pl_eqt` from `pl_insol`
 (T ≈ 278.6 K × S^¼) — measured: +32 planets, because insolation is almost always listed alongside a
@@ -212,10 +213,3 @@ running) is a contained change inside `records.py`.
    honesty line, metadata, NavBar link, sitemap static path, tests (size: M)
 5. Homepage `RecordsStrip` (Suspense + `connection()`, three most recent, link to `/records`) between
    Hero and Latest Discoveries, tests (size: S)
-
-## Open Questions
-- Q: Requiring all three archive-listed inputs takes the ESI badge off roughly a thousand planets
-  (2,174 scored today → 1,139; 18 % of the archive). I recommend accepting that — every remaining
-  score is one we can stand behind, and the two ways to soften it (`pl_insol` +32, stellar
-  derivation +158) each add an "estimated" temperature we'd have to flag everywhere. Accept the
-  drop, or derive from stellar data to keep more badges?
