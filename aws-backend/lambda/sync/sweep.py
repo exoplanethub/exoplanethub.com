@@ -25,7 +25,7 @@ def sweep_removed(table, tombstones, archive_names, removed_at):
 
 def _delete_missing_from(table, tombstones, archive_names, removed_at):
     stored = _scan_items(table)
-    stale = sorted(set(stored) - archive_names)
+    stale = sorted(stored.keys() - archive_names)
 
     if len(stale) > MAXIMUM_DELETION_FRACTION * len(stored):
         logger.error(

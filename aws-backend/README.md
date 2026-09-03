@@ -11,12 +11,15 @@ Deletion is the one step the next run cannot recompute, so before any record is 
 writes a tombstone to `exoplanet-tombstones-<env>` — `{pl_name, removed_at, last_known_snapshot}`,
 where the snapshot is the full item as last stored and `removed_at` is the run's `last_updated`
 timestamp. If the tombstone batch fails, nothing is deleted. A planet the archive drops, relists and
-drops again keeps only its latest tombstone.
+drops again keeps only its latest tombstone. The table is retained if the stack is deleted or the
+resource replaced, because a resync cannot rebuild it.
 
 The invocation result reports `total_synced`, `removals_submitted` and `sweep_aborted`; every
 removed `pl_name` is logged individually. `removals_submitted` counts what was handed to DynamoDB:
 exact when `sweep_aborted` is false, an upper bound when it is true, because a batch can commit and
-still fail. A run that aborts mid-sweep is safe to retry — tombstones and deletions are idempotent.
+still fail. A run that aborts mid-sweep is safe to retry — tombstones and deletions are idempotent,
+though a retry re-puts each tombstone with its own `removed_at`, so the recorded time is the last
+attempt's, not the first run that saw the record stale.
 
 ## Local Deployment
 

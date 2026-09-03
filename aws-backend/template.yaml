@@ -42,8 +42,11 @@ Resources:
             ProjectionType: ALL
 
   # Written by the sweep before it deletes a record the archive no longer lists.
+  # Retained: unlike ExoplanetsTable, a resync cannot rebuild this data.
   TombstonesTable:
     Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       TableName: !Sub exoplanet-tombstones-${Environment}
       BillingMode: PAY_PER_REQUEST
