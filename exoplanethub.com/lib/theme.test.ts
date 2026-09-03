@@ -83,6 +83,13 @@ describe('border token', () => {
       expect(contrastRatio(colors.border, fill), `${name} border ${colors.border} on ${surface} ${fill}`).toBeGreaterThanOrEqual(3);
     }
   });
+
+  // Hover fills (modal close buttons, quick-view) paint the border colour under text, so it is bounded on both sides.
+  it.each(THEME_NAMES)('%s reads text on a border-filled surface at 4.5:1 or better', (name) => {
+    const { colors } = getTheme(name);
+
+    expect(contrastRatio(colors.text, colors.border), `${name} text ${colors.text} on border ${colors.border}`).toBeGreaterThanOrEqual(4.5);
+  });
 });
 
 describe('ESI band tokens', () => {
