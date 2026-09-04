@@ -1,6 +1,8 @@
 import logging
 from dataclasses import dataclass
 
+from dynamo import scan_all
+
 logger = logging.getLogger(__name__)
 
 # A truncated archive fetch would otherwise sweep the table; no real run drops this much at once.
@@ -15,28 +17,41 @@ class SweepResult:
 
 
 # Never raises: the ingest has already committed and must still report success.
-def sweep_removed(table, archive_names):
+def sweep_removed(table, tombstones, archive_names, removed_at):
     try:
-        return _delete_missing_from(table, archive_names)
+        return _delete_missing_from(table, tombstones, archive_names, removed_at)
     except Exception:
         logger.exception('sweep aborted: removal pass failed against %d archive records', len(archive_names))
         return SweepResult(submitted=(), aborted=True)
 
 
-def _delete_missing_from(table, archive_names):
-    stored_names = _scan_names(table)
-    stale = sorted(stored_names - archive_names)
+def _delete_missing_from(table, tombstones, archive_names, removed_at):
+    # Full items, not just names: the stale ones become the tombstones' last known snapshot.
+    stored = scan_all(table, 'pl_name')
+    stale = sorted(stored.keys() - archive_names)
 
-    if len(stale) > MAXIMUM_DELETION_FRACTION * len(stored_names):
+    if len(stale) > MAXIMUM_DELETION_FRACTION * len(stored):
         logger.error(
             'sweep aborted: %d of %d stored records are absent from the archive, above the %.0f%% ceiling',
             len(stale),
-            len(stored_names),
+            len(stored),
             100 * MAXIMUM_DELETION_FRACTION,
         )
         return SweepResult(submitted=(), aborted=True)
 
+    # Tombstones land before any delete is handed over: a failure here raises and nothing is deleted.
+    _write_tombstones(tombstones, [stored[name] for name in stale], removed_at)
     return _submit_deletions(table, stale)
+
+
+def _write_tombstones(tombstones, snapshots, removed_at):
+    with tombstones.batch_writer() as batch:
+        for snapshot in snapshots:
+            batch.put_item(Item={
+                'pl_name': snapshot['pl_name'],
+                'removed_at': removed_at,
+                'last_known_snapshot': snapshot,
+            })
 
 
 def _submit_deletions(table, stale):
@@ -53,14 +68,3 @@ def _submit_deletions(table, stale):
         return SweepResult(submitted=tuple(submitted), aborted=True)
 
     return SweepResult(submitted=tuple(submitted), aborted=False)
-
-
-def _scan_names(table):
-    request = {'ProjectionExpression': 'pl_name'}
-    names = set()
-    while True:
-        page = table.scan(**request)
-        names.update(item['pl_name'] for item in page['Items'])
-        if not page.get('LastEvaluatedKey'):
-            return names
-        request['ExclusiveStartKey'] = page['LastEvaluatedKey']

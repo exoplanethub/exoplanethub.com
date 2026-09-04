@@ -41,6 +41,38 @@ Resources:
           Projection:
             ProjectionType: ALL
 
+  # Written by the sweep before it deletes a record the archive no longer lists.
+  # Retained: unlike ExoplanetsTable, a resync cannot rebuild this data.
+  TombstonesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub exoplanet-tombstones-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pl_name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pl_name
+          KeyType: HASH
+
+  # One state item per tracked superlative: current holder, `since` and its previous holders.
+  # Retained: a resync recomputes the holder but never the history.
+  RecordsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub exoplanet-records-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: record_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: record_id
+          KeyType: HASH
+
   DataSyncFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -50,9 +82,19 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref ExoplanetsTable
+          TOMBSTONES_TABLE_NAME: !Ref TombstonesTable
+          RECORDS_TABLE_NAME: !Ref RecordsTable
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ExoplanetsTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref TombstonesTable
+        # Read + Write rather than Crud: the sync only scans and puts, so DeleteItem is not granted.
+        # (BatchWriteItem can still delete — the real guard on history is Retain plus this code path.)
+        - DynamoDBReadPolicy:
+            TableName: !Ref RecordsTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref RecordsTable
       Events:
         SixHourlySync:
           Type: Schedule
@@ -67,3 +109,9 @@ Outputs:
   ExoplanetsTableArn:
     Description: DynamoDB table ARN
     Value: !GetAtt ExoplanetsTable.Arn
+  TombstonesTableName:
+    Description: DynamoDB table recording planets the sweep removed
+    Value: !Ref TombstonesTable
+  RecordsTableName:
+    Description: DynamoDB table holding the current and previous holders of each tracked record
+    Value: !Ref RecordsTable

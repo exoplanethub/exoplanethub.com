@@ -7,14 +7,13 @@ import { getPlanetDetail } from '@/lib/planetDetail';
 import { planetMetadata } from '@/lib/planetMetadata';
 import { planetNameFromParam } from '@/lib/planetUrl';
 import { planetStatSections, type PlanetStatSection } from '@/lib/planetStats';
+import { formatSyncDate } from '@/lib/syncDate';
 import PageSection from './PageSection';
 import styles from './page.module.css';
 
 export const revalidate = 3600;
 
 const ARCHIVE_URL = 'https://exoplanetarchive.ipac.caltech.edu/';
-
-const SYNC_DATE = new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' });
 
 interface PlanetPageProps {
   params: Promise<{ name: string }>;
@@ -110,6 +109,6 @@ function Unknown() {
 }
 
 function describeSync(lastUpdated: string): string {
-  const synced = new Date(lastUpdated);
-  return Number.isNaN(synced.getTime()) ? '.' : `, synced ${SYNC_DATE.format(synced)}.`;
+  const synced = formatSyncDate(lastUpdated);
+  return synced === null ? '.' : `, synced ${synced}.`;
 }
