@@ -4,14 +4,14 @@
 
 ExoplanetHub is an archive first: a complete, queryable, shareable view of NASA's confirmed
 exoplanets. What the site presents as new is derived from the scheduled sync's diff against the
-archive, never hand-written. Today that is the latest-confirmations feed; retractions and records
-broken follow from the same diff. There is no blog and no editorial pipeline; if the data does not
-say it, the site does not claim it.
+archive, never hand-written. Today that is the latest-confirmations feed and records broken;
+retractions follow from the same diff. There is no blog and no editorial pipeline; if the data does
+not say it, the site does not claim it.
 
 ## Shipped
 
 ### 1. Earth-Similarity Index (ESI) Badge & Sorting
-Add visual indicators and sorting for planets most similar to Earth based on radius, density, and temperature.
+Add visual indicators and sorting for planets most similar to Earth based on radius, mass, and temperature.
 
 **Tasks:**
 - Calculate ESI score for each planet
@@ -49,6 +49,18 @@ non-astronomer and unfurls with a real preview wherever the link is shared.
 - Per-planet titles, descriptions and link-preview images
 - Link planet names from the table, cards, modal and Latest Discoveries
 - Sitemap and robots entries so the pages are indexable
+
+### 5. Records Broken
+Persist the archive's superlatives — hottest, largest, smallest, most massive, shortest year,
+nearest and most Earth-like — on every sync, record each change of holder with a date, and surface
+them as the second feed derived from the sync's diff rather than written by hand.
+
+**Tasks:**
+- One ESI rule everywhere: a score exists only when radius, mass and temperature are all measured
+- Sync computes each record's holder and persists holder, tenure and displaced holders in DynamoDB
+- `/records` page: every record's holder, value, tenure and previous holders, each linking to its planet page
+- Homepage strip of the three most recently changed records, linking to `/records`
+- "Most Earth-like" framed as closest to Earth's conditions, explicitly not "habitable"
 
 ## Future Ideas
 

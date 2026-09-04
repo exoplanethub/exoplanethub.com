@@ -29,6 +29,7 @@ vi.mock('next/cache', () => ({ unstable_cache: unstableCache }));
 const STATIC_URLS = [
   'https://www.exoplanethub.com/',
   'https://www.exoplanethub.com/explore',
+  'https://www.exoplanethub.com/records',
   'https://www.exoplanethub.com/about',
   'https://www.exoplanethub.com/contact',
 ];
@@ -89,7 +90,7 @@ describe('sitemap', () => {
 
     const entries = await loadSitemap();
 
-    expect(entries.slice(0, 4).map((entry) => entry.url)).toEqual(STATIC_URLS);
+    expect(entries.slice(0, STATIC_URLS.length).map((entry) => entry.url)).toEqual(STATIC_URLS);
   });
 
   it('emits one absolute URL per archived planet', async () => {

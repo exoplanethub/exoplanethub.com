@@ -36,3 +36,16 @@ describe('NavBar accessibility (#6)', () => {
     expect(screen.getByRole('link', { name: 'ExoplanetHub' })).toBeInTheDocument();
   });
 });
+
+describe('NavBar destinations', () => {
+  it.each([
+    ['Explore', '/explore'],
+    ['Records', '/records'],
+    ['About', '/about'],
+    ['Contact', '/contact'],
+  ])('links %s to %s', (name, href) => {
+    render(<NavBar />);
+
+    expect(screen.getByRole('link', { name })).toHaveAttribute('href', href);
+  });
+});

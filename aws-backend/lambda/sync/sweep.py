@@ -1,6 +1,8 @@
 import logging
 from dataclasses import dataclass
 
+from dynamo import scan_all
+
 logger = logging.getLogger(__name__)
 
 # A truncated archive fetch would otherwise sweep the table; no real run drops this much at once.
@@ -24,7 +26,8 @@ def sweep_removed(table, tombstones, archive_names, removed_at):
 
 
 def _delete_missing_from(table, tombstones, archive_names, removed_at):
-    stored = _scan_items(table)
+    # Full items, not just names: the stale ones become the tombstones' last known snapshot.
+    stored = scan_all(table, 'pl_name')
     stale = sorted(stored.keys() - archive_names)
 
     if len(stale) > MAXIMUM_DELETION_FRACTION * len(stored):
@@ -65,15 +68,3 @@ def _submit_deletions(table, stale):
         return SweepResult(submitted=tuple(submitted), aborted=True)
 
     return SweepResult(submitted=tuple(submitted), aborted=False)
-
-
-# Full items, not just names: the stale ones become the tombstones' last known snapshot.
-def _scan_items(table):
-    request = {}
-    items = {}
-    while True:
-        page = table.scan(**request)
-        items.update((item['pl_name'], item) for item in page['Items'])
-        if not page.get('LastEvaluatedKey'):
-            return items
-        request['ExclusiveStartKey'] = page['LastEvaluatedKey']
