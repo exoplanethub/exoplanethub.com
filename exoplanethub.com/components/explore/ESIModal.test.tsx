@@ -98,4 +98,12 @@ describe('ESIModal', () => {
 
     expect(within(dialog).getByText(/Schulze-Makuch et al\. \(2011\)/)).toBeInTheDocument();
   });
+
+  it('states that all three inputs are required, with a fixed 1/3 exponent', async () => {
+    const { dialog } = await openModal();
+
+    expect(within(dialog).getByText(/\^\(1\/3\)/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/All three inputs are required/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/adaptation of the published index/)).toBeInTheDocument();
+  });
 });

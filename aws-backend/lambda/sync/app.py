@@ -3,15 +3,19 @@ import logging
 import os
 import urllib.request
 import boto3
-from decimal import Decimal
 from datetime import datetime
 from esi import compute_esi
+from records import update_records_after_sweep
 from sweep import sweep_removed
+from values import to_decimal
 
 logging.getLogger('sweep').setLevel(logging.INFO)
+logging.getLogger('records').setLevel(logging.INFO)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['TABLE_NAME'])
+tombstones = dynamodb.Table(os.environ['TOMBSTONES_TABLE_NAME'])
+records_table = dynamodb.Table(os.environ['RECORDS_TABLE_NAME'])
 
 def lambda_handler(event, context):
     nasa_url = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+pl_name,hostname,sy_snum,sy_pnum,sy_dist,discoverymethod,disc_year,disc_facility,pl_orbper,pl_orbsmax,pl_rade,pl_bmasse,pl_dens,pl_eqt,pl_insol,st_teff,st_rad,st_mass,st_logg,st_age+from+ps+where+default_flag=1&format=json"
@@ -54,18 +58,16 @@ def lambda_handler(event, context):
 
             batch.put_item(Item=item)
 
-    sweep = sweep_removed(table, archive_names)
+    sweep = sweep_removed(table, tombstones, archive_names, removed_at=timestamp)
+    records = update_records_after_sweep(sweep, records_table, data, timestamp)
 
     return {
         'statusCode': 200,
         'body': json.dumps({
             'total_synced': len(data),
             'removals_submitted': len(sweep.submitted),
-            'sweep_aborted': sweep.aborted
+            'sweep_aborted': sweep.aborted,
+            'records_changed': len(records.changed),
+            'records_aborted': records.aborted
         })
     }
-
-def to_decimal(value):
-    if value is None:
-        return None
-    return Decimal(str(value))
