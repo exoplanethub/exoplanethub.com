@@ -9,7 +9,7 @@ export default async function RecordList() {
   const result = await fetchRecords();
 
   if (result.status === 'unavailable') {
-    return <p className={styles.notice}>Records are being tracked — check back soon.</p>;
+    return <p className={styles.notice}>Records are unavailable right now. Please check back shortly.</p>;
   }
 
   if (result.records.length === 0) {

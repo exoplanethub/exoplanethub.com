@@ -218,12 +218,15 @@ describe('RecordList registry and table disagreeing', () => {
 });
 
 describe('RecordList without records', () => {
-  it('shows a calm empty state, not an error, when the table cannot be read', async () => {
+  it('says records are unavailable, matching the homepage strip, when the table cannot be read', async () => {
     send.mockRejectedValue(new Error('AccessDeniedException'));
 
     render(await RecordList());
 
-    expect(screen.getByText('Records are being tracked — check back soon.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Records are unavailable right now. Please check back shortly.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/tracked/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
