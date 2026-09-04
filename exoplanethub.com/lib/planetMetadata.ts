@@ -3,8 +3,7 @@ import type { Planet } from '@/lib/mockPlanets';
 import { planetHighlights } from '@/lib/planetStats';
 import { planetUrl } from '@/lib/planetUrl';
 import { SHARE_IMAGE_SIZE, shareImageAlt, shareImageUrl } from '@/lib/shareImage';
-
-const SITE_NAME = 'ExoplanetHub';
+import { SITE_NAME } from '@/lib/site';
 
 // The archive stores planets it has barely measured, and a preview of bare commas reads as a broken page.
 const UNMEASURED = "a confirmed exoplanet in NASA's Exoplanet Archive";

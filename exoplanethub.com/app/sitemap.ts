@@ -7,7 +7,7 @@ import { SITE_ORIGIN } from '@/lib/site';
 
 const REVALIDATE_SECONDS = 3600;
 
-const STATIC_PATHS = ['/', '/explore', '/about', '/contact'];
+const STATIC_PATHS = ['/', '/explore', '/records', '/about', '/contact'];
 
 // Bounds a public endpoint that would otherwise Scan ~6k items on every crawler request.
 const cachedPlanetNames = unstable_cache(() => scanAllPlanets(['pl_name']), ['sitemap-planet-urls'], {

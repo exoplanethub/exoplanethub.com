@@ -34,6 +34,7 @@ export interface RecordDefinition {
   id: RecordId;
   label: string;
   blurb: string;
+  caveat?: string;
   format: (value: number) => string | null;
 }
 
@@ -52,6 +53,10 @@ const RECORDS: readonly RecordDefinition[] = [
     id: 'most-earth-like',
     label: 'Most Earth-like',
     blurb: "The planet whose size, mass and temperature together come closest to Earth's own.",
+    caveat:
+      'Only planets with a measured size, mass and temperature can be scored, so this is the most ' +
+      'Earth-like of the worlds we can actually score — not of every planet catalogued, and not a ' +
+      'sign that it is habitable.',
     format: esiScore,
   },
   {
@@ -91,6 +96,8 @@ const RECORDS: readonly RecordDefinition[] = [
     format: lightYearsAway,
   },
 ];
+
+export const RECORD_COUNT = RECORDS.length;
 
 // Intersecting on id lets either half of the registry deploy first.
 function inRegistryOrder(stored: StoredRecord[]): PlanetRecord[] {

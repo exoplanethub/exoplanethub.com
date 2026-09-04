@@ -1,0 +1,119 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.label {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 8px;
+}
+
+.blurb {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  margin: 0 0 20px;
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.factLabel {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.holder {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.value {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.tenure {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.caveat {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+  margin: 16px 0 0;
+  padding-top: 12px;
+}
+
+.history {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.historySummary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.historySummary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+
+.historyItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.historyValue {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.historyWindow {
+  color: var(--color-text-muted);
+}
